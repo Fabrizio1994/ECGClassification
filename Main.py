@@ -1,7 +1,7 @@
 import wfdb
-import os
 from IPython.display import display
-import pprint as pp
+from scipy import signal
+from numpy import gradient
 
 # wfdb.dldatabase('mitdb', os.getcwd())
 
@@ -10,32 +10,37 @@ import pprint as pp
 #wfdb.plotrec(record, title='Record 232 from MITDB')
 #display(record.__dict__)
 
-#signals, fields = wfdb.srdsamp('232', sampfrom=100, sampto=2000)
 
-#display(signals)
-#display(fields)
 
-#annotation = wfdb.rdann('232', 'atr', sampfrom=100, sampto=20000)
-#annotation.fs = 360
-#wfdb.plotann(annotation, timeunits='minutes')
+record = wfdb.rdsamp('samples/100')
+annotation = wfdb.rdann('samples/100', 'atr')
+peak_location = annotation.sample
+labels = []
 
-signal_length = 650000
-interval = 2000
-names = []
-record_name = {}
+first_channel = []
+second_channel = []
+record.p_signals = signal.lfilter([-16, -32], [-1], record.p_signals)
 
-for signal_name in os.listdir(os.getcwd()+'/samples'):
-    signal = signal_name.split('.')
-    start = 0
-    end = interval
-    if signal[0] not in names:
-        names.append(signal[0])
-        count = 0
-        while end <= signal_length:
-            record = wfdb.rdsamp('samples/' + signal[0], sampfrom=start, sampto=end)
-            start = end
-            end = end + interval
-            record_name[signal[0]+"_"+str(count)] = record
-            count += 1
+for elem in record.p_signals:
+    first_channel.append(elem[0])
+    second_channel.append((elem[1]))
+gradient_channel1 = gradient(first_channel)
+gradient_channel2 = gradient(second_channel)
+
+features = []
+for i in range(650000):
+    print(i)
+    features.append([gradient_channel1[i], gradient_channel2[i]])
+    if i in peak_location:
+        labels.append(1)
+    else:
+        labels.append(-1)
+
+print(len(labels)) #650000
+print(labels) 
+print(labels[18]) #1
+
+
+
 
 
