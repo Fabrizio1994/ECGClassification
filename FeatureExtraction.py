@@ -4,14 +4,12 @@ import numpy as np
 
 
 class FeatureExtraction:
-
     def extract_features(self, sample_name):
+        print("Extracting features...")
         record = wfdb.rdsamp('samples/' + sample_name)
-
         first_channel = []
         second_channel = []
         record.p_signals = signal.lfilter([-16, -32], [-1], record.p_signals)
-
         for elem in record.p_signals:
             first_channel.append(elem[0])
             second_channel.append((elem[1]))
@@ -35,13 +33,9 @@ class FeatureExtraction:
                 labels.append(-1)
         return np.asarray(labels)
 
-
-    def define_multiclass_labels(self, sample_name):
+    def define_multiclass_labels(self, sample_name, symbols):
         annotation = wfdb.rdann('samples/' + sample_name, 'atr')
         labels = []
-        symbols = ['N', 'L', 'R', 'B', 'A', 'a', 'J', 'S', 'V', 'r', 'F', 'e', 'j', 'n', 'E', '/', 'f', 'Q', '?',
-                   '[', '!', ']', 'x', '(', ')', 'p', 't', 'u', '`', '\'', '^', '|', '~', '+', 's', 'T', '*', 'D',
-                   '=', '"', '@']
         symbols2id = {}
 
         for id in range(len(symbols)):
