@@ -1,46 +1,16 @@
-import wfdb
-from IPython.display import display
-from scipy import signal
-from numpy import gradient
+from FeatureExtraction import FeatureExtraction
+from sklearn.neighbors import KNeighborsClassifier
+from GridSearch import GridSearch
 
-# wfdb.dldatabase('mitdb', os.getcwd())
+fe = FeatureExtraction()
 
-#To plot a single record
-#record = wfdb.rdsamp('232')
-#wfdb.plotrec(record, title='Record 232 from MITDB')
-#display(record.__dict__)
+features, labels = fe.extract_features('100')
+knn = KNeighborsClassifier()
+knn_parameters = {'n_neighbors': [1, 3, 5, 7, 9],
+                  'weights': ['uniform', 'distance'],
+                  'p': [1, 2],
+                  }
 
-
-
-record = wfdb.rdsamp('samples/100')
-annotation = wfdb.rdann('samples/100', 'atr')
-peak_location = annotation.sample
-labels = []
-
-first_channel = []
-second_channel = []
-record.p_signals = signal.lfilter([-16, -32], [-1], record.p_signals)
-
-for elem in record.p_signals:
-    first_channel.append(elem[0])
-    second_channel.append((elem[1]))
-gradient_channel1 = gradient(first_channel)
-gradient_channel2 = gradient(second_channel)
-
-features = []
-for i in range(650000):
-    print(i)
-    features.append([gradient_channel1[i], gradient_channel2[i]])
-    if i in peak_location:
-        labels.append(1)
-    else:
-        labels.append(-1)
-
-print(len(labels)) #650000
-print(labels) 
-print(labels[18]) #1
-
-
-
-
+target_names = ['peak', 'not-peak']
+gs = GridSearch(knn, knn_parameters, features, labels, target_names)
 
