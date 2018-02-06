@@ -7,9 +7,6 @@ class FeatureExtraction:
 
     def extract_features(self, sample_name):
         record = wfdb.rdsamp('samples/' + sample_name)
-        annotation = wfdb.rdann('samples/' + sample_name, 'atr')
-        peak_location = annotation.sample
-        labels = []
 
         first_channel = []
         second_channel = []
@@ -25,10 +22,40 @@ class FeatureExtraction:
         for i in range(650000):
             print(i)
             features.append([gradient_channel1[i], gradient_channel2[i]])
+        return np.asarray(features)
+
+    def define_2class_labels(self, sample_name):
+        annotation = wfdb.rdann('samples/' + sample_name, 'atr')
+        labels = []
+        peak_location = annotation.sample
+        for i in range(650000):
             if i in peak_location:
                 labels.append(1)
             else:
                 labels.append(-1)
-        np.asarray(features)
-        np.asarray(labels)
-        return features, labels
+        return np.asarray(labels)
+
+
+    def define_multiclass_labels(self, sample_name):
+        annotation = wfdb.rdann('samples/' + sample_name, 'atr')
+        labels = []
+        symbols = ['N', 'L', 'R', 'B', 'A', 'a', 'J', 'S', 'V', 'r', 'F', 'e', 'j', 'n', 'E', '/', 'f', 'Q', '?',
+                   '[', '!', ']', 'x', '(', ')', 'p', 't', 'u', '`', '\'', '^', '|', '~', '+', 's', 'T', '*', 'D',
+                   '=', '"', '@']
+        symbols2id = {}
+
+        for id in range(len(symbols)):
+            symbols2id[symbols[id]] = id
+
+        signal_symbols = annotation.symbol
+        signal_samples = annotation.sample
+        len(signal_symbols)
+
+        j = 0
+        for i in range(650000):
+            if i in signal_samples:
+                labels.append(signal_symbols[j])
+                j += 1
+            else:
+                labels.append('$')
+        return np.asarray(labels)
