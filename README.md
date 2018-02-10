@@ -35,8 +35,21 @@ For further descriptions, please see the references.
 |       N       | Normal Beat                    |
 |       L       | Left bundle branch block beat  |
 |R|Right bundle branch block beat|
-
-
+|A|Atrial premature beat|
+|a|Aberrated atrial premature beat|
+|J|Nodal (junctional) premature beat|
+|S|Supraventricular premature beat|
+|V|Premature ventricular contraction|
+|F|Fusion of ventricular and normal beat|
+|\[|Start of ventricular flutter/fibrillation|
+|!|Ventricular flutter wave|
+|\]|End of Ventricular flutter/fibrillation|
+|e|Atrial escape beat|
+|/|Paced beat|
+|f|Fusion of paced and normal beat|
+|x|Non-conducted P-wave (blocked APB)|
+|Q|Unclassifiable beat|
+||| Isolated QRS-like artifact|
 
 
 ## The Algorithm 
