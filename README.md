@@ -34,6 +34,8 @@ For further descriptions, please see the references.
 | ------------- | -------------------------------|
 |       N       | Normal Beat                    |
 |       L       | Left bundle branch block beat  |
+|R|Right bundle branch block beat|
+
 
 
 
