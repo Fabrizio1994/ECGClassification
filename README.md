@@ -14,6 +14,10 @@ pip install wfdb
 # Repository directory structure 
 ```
 ├── Main.py
+|
 ├── FeatureExtraction.py
+|
 ├── KNN.py
+|
+└── README.md
 ```
