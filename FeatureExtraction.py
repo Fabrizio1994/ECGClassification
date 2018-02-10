@@ -4,9 +4,9 @@ import numpy as np
 
 
 class FeatureExtraction:
-    def extract_features(self, sample_name):
-        print("Extracting features...")
-        record = wfdb.rdsamp('samples/' + sample_name)
+    def extract_features(self, sample_name, sampto=650000):
+        print("Extracting features for signal"+sample_name+"...")
+        record = wfdb.rdsamp('samples/' + sample_name, sampfrom=0, sampto=sampto)
         first_channel = []
         second_channel = []
         record.p_signals = signal.lfilter([-16, -32], [-1], record.p_signals)
@@ -15,12 +15,11 @@ class FeatureExtraction:
             second_channel.append((elem[1]))
         gradient_channel1 = np.gradient(first_channel)
         gradient_channel2 = np.gradient(second_channel)
-
         features = []
-        for i in range(650000):
+        for i in range(sampto):
             print(i)
             features.append([gradient_channel1[i], gradient_channel2[i]])
-        return np.asarray(features)
+        return features
 
     def define_2class_labels(self, sample_name):
         annotation = wfdb.rdann('samples/' + sample_name, 'atr')
@@ -33,20 +32,19 @@ class FeatureExtraction:
                 labels.append(-1)
         return np.asarray(labels)
 
-    def define_multiclass_labels(self, sample_name, symbols):
+    def define_multiclass_labels(self, sample_name, symbols, sampto):
         annotation = wfdb.rdann('samples/' + sample_name, 'atr')
         labels = []
         symbols2id = {}
 
         for id in range(len(symbols)):
             symbols2id[symbols[id]] = id
-
         signal_symbols = annotation.symbol
         signal_samples = annotation.sample
         len(signal_symbols)
 
         j = 0
-        for i in range(650000):
+        for i in range(sampto):
             if i in signal_samples:
                 labels.append(signal_symbols[j])
                 j += 1

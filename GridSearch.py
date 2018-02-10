@@ -23,7 +23,7 @@ class GridSearch:
 
         grid_search = GridSearchCV(classifier,
                                    parameters,
-                                   scoring=metrics.make_scorer(metrics.f1_score, average='weighted'),
+                                   scoring=metrics.make_scorer(metrics.accuracy_score),
                                    cv=5,
                                    n_jobs=-1,
                                    verbose=10)
@@ -44,7 +44,10 @@ class GridSearch:
 
         print("Best Parameters:")
         pp.pprint(grid_search.best_params_)
-
+        text_file = open("Classification_report.txt", "a")
+        for param in grid_search.best_params_:
+            text_file.write("%s\n" % grid_search.best_params_[param])
+        text_file.close()
         print("Used Scorer Function:")
         pp.pprint(grid_search.scorer_)
 
@@ -81,7 +84,7 @@ class GridSearch:
 
     def classification_report_txt(self, report, confusion_matrix, accuracy):
         text_file = open("Classification_report.txt", "a")
-        text_file.write("report:%s\nconfusion matrix: %s\nnormalized accuracy: %s" % (report,
+        text_file.write("report:%s\nconfusion matrix: %s\nnormalized accuracy: %s\n" % (report,
                         confusion_matrix, accuracy))
         text_file.close()
 
