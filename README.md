@@ -49,7 +49,7 @@ For further descriptions, please see the references.
 |f|Fusion of paced and normal beat|
 |x|Non-conducted P-wave (blocked APB)|
 |Q|Unclassifiable beat|
-||| Isolated QRS-like artifact|
+|\|| Isolated QRS-like artifact|
 
 
 ## The Algorithm 
