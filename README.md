@@ -53,6 +53,7 @@ For further descriptions, please see the references.
 |?|Beat not classified during learning|
 
 |Non-Beat Annotation | Meaning| 
+|--------------------|--------|
 |\[|Start of ventricular flutter/fibrillation|
 |!|Ventricular flutter wave|
 |\]|End of Ventricular flutter/fibrillation|
