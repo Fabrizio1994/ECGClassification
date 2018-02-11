@@ -83,10 +83,38 @@ For further descriptions, please see the references.
 
 
 ## The Algorithm 
-The algorithm is actually divided in three main phases : Read the data, Extract the features and Classification. 
+The aim of this work is to provide two efficient solutions for the problems of QRS detection and multiclass classification. 
+Every signal is annotated by cardiologists with the locations of the QRS complexes, and labeled with a symbols from the list above.  
+In this scope, the QRS detection problem is encountered as a binary classification problem:
+each sample point of a given signal is considered as a feature that can be classified either as a QRS complex or not.  
+The before mentioned QRS multiclass classification aims to label each sample point with one of the symbols listed in the Annotations section. 
+For the first problem thw whole signal '100' is considered as training data, sampled in 650.000 points.
+The training data of the multiclass problem is composed by the first 20.000 samples of each of the 48 record in the MIT-BIH database.
+The algorithm is actually divided in four main phases : Reading data, Signal Processing, Feature Extraction and Classification. 
 
 ### Reading Data
+Raw signals are loaded with rdsamp function from WFDB package:
+```
+wfdb.rdsamp(path_to_sample, samp_from, samp_to)
+```
+where path_to_sample is the local path where the records are stored, and samp_from and samp_to define the portion of signal, contained in a range of frequencies, considered for processing.
+Each record in the database comprehends two raw signals, coming from the two channels of ECG recording. 
+### Signal Processing
+Signals are processed by using an high pass filter, in order to reduce the recording noise that would lead to uncorrect classifications.  
+Furthermore, the original signal peaks result sharpened in the output signal, expecting a greater detection accuracy.
+The high pass filter chosen is the one suggested in "QRS detection using KNN" paper, defined by the following transfer function:  
+![equation](http://latex.codecogs.com/gif.latex?H(z)&space;=&space;\frac{-1&plus;32z^{-16}&plus;z^{-32}}{1&plus;z^{-1}})  
+This step is implemented by means of the lfilter function of scipy package:  
+```
+output_record = signal.lfilter(num_coefficents, den_coefficients, input_record)
+```
+where num_coefficients and den_coefficients are the lists of exponent values of the transfer function of the numerator and the denominator respectively.  
+
 ### Feature Extraction
+The KNN classifier expects as input a feature vector for each sample point.
+Values in such vector should describe the signal function trend with the purpose of detecting peaks.  
+Therefore this step requires the computation of the gradient vector of the two signals of each record, considering its elements as features.  
+In the two class scope, signal  is represented by 650000 sample points
 #### Two-Class Labels
 #### Multi-Class labels
 ### KNN Classifier
