@@ -113,10 +113,11 @@ where num_coefficients and den_coefficients are the lists of exponent values of 
 ### Feature Extraction
 The KNN classifier expects as input a feature vector for each sample point.
 Values in such vector should describe the signal function trend with the purpose of detecting peaks.  
-Therefore this step requires the computation of the gradient vector of the two signals of each record, considering its elements as features.  
-In the two class scope, signal  is represented by 650000 sample points
+Therefore this step requires the computation of the gradient vector of the two signals of each record, considering its elements as features. In this way each sample corresponds to a 2D feature vector. 
 #### Two-Class Labels
+In the binary classification scope, each feature has assigned a value {-1,1} whether the original sample point results annotated as a peak.  
 #### Multi-Class labels
+Multiclass labels are defined with an integer value in (0,38) corresponding to annotations symbols and -1 for samples that aren't peaks.
 ### KNN Classifier
 #### Parameters
 ### Output
