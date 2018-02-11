@@ -41,13 +41,12 @@ class FeatureExtraction:
             symbols2id[symbols[id]] = id
         signal_symbols = annotation.symbol
         signal_samples = annotation.sample
-        len(signal_symbols)
 
         j = 0
         for i in range(sampto):
             if i in signal_samples:
-                labels.append(signal_symbols[j])
+                labels.append(symbols2id[signal_symbols[j]])
                 j += 1
             else:
-                labels.append('$')
+                labels.append(-1)
         return np.asarray(labels)
