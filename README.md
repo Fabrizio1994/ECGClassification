@@ -17,7 +17,9 @@ pip install wfdb
 |
 ├── FeatureExtraction.py
 |
-├── KNN.py
+├── GridSearch.py
+|
+├── MultiClassClassification.py
 |
 └── README.md
 ```
