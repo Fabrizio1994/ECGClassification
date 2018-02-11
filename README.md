@@ -21,6 +21,8 @@ pip install wfdb
 |
 ├── MultiClassClassification.py
 |
+├── TwoClassClassification.py
+|
 └── README.md
 ```
 
