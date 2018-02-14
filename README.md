@@ -93,9 +93,18 @@ The training data of the multiclass problem is composed by the first 20.000 samp
 The algorithm is actually divided in four main phases : Reading data, Signal Processing, Feature Extraction and Classification. 
 
 ### Reading Data
+Data are available in the PhysioNet website, precisely at the link below:
+https://www.physionet.org/physiobank/database/mitdb/
+Dataset is divided in three standard categories: 
+'''
+* MIT Signal files (.dat) are binary files containing samples of digitized signals. These store the waveforms, but they cannot be interpreted properly without their corresponding header files. These files are in the form: RECORDNAME.dat.
+* MIT Header files (.hea) are short text files that describe the contents of associated signal files. These files are in the form: RECORDNAME.hea.
+* MIT Annotation files are binary files containing annotations (labels that generally refer to specific samples in associated signal files). Annotation files should be read with their associated header files. If you see files in a directory called RECORDNAME.dat, or RECORDNAME.hea, any other file with the same name but different extension, for example RECORDNAME.atr, is an annotation file for that record.
+''' 
+
 Raw signals are loaded with rdsamp function from WFDB package:
 ```
-wfdb.rdsamp(path_to_sample, samp_from, samp_to)
+wfdb.rdrecord(path_to_sample, samp_from, samp_to)
 ```
 where path_to_sample is the local path where the records are stored, and samp_from and samp_to define the portion of signal, contained in a range of frequencies, considered for processing.
 Each record in the database comprehends two raw signals, coming from the two channels of ECG recording. 
@@ -110,8 +119,8 @@ output_record = signal.lfilter(num_coefficents, den_coefficients, input_record)
 ```
 where num_coefficients and den_coefficients are the lists of exponent values of the transfer function of the numerator and the denominator respectively.  
 
-![alt text](https://image.ibb.co/gCiVgS/prefiltered100.png)
-![alt text](https://image.ibb.co/f4pQFn/filtered100.png)
+![Non-Filtered Signal](https://image.ibb.co/gCiVgS/prefiltered100.png)
+![Filtered Signal](https://image.ibb.co/f4pQFn/filtered100.png)
 
 ### Feature Extraction
 The KNN classifier expects as input a feature vector for each sample point.
