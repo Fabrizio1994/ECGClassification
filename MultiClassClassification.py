@@ -26,5 +26,5 @@ class MultiClassClassification:
                 for value in label:
                     labels.append(value)
         print(len(features) == len(labels))
-        GridSearch(np.asarray(features), np.asarray(labels),['not QRS'] + multiclass_target_names)
+        GridSearch(np.asarray(features), np.asarray(labels), multiclass_target_names)
 

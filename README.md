@@ -26,8 +26,6 @@ pip install wfdb
 └── README.md
 ```
 
-## Installation and Usage
-
 ## MIT-BIH Arrhythmia Database
 The MIT-BIH Arrhytmia DB contains 48 half-hour excerpts of two-channel ambulatory ECG recordings, obtained from 47 subjects (records 201 and 202 are from the same subject) studied by the BIH Arrhythmia Laboratory between 1975 and 1979. Of these, 23 were chosen at random from a collection of over 4000 Holter tapes, and the other 25 (the "200 series") were selected to include examples of uncommon but clinically important arrhythmias that would not be well represented in a small random sample. Approximately 60% of the subjects were inpatients. The recordings were digitized at 360 samples per second per channel with 11-bit resolution over a 10 mV range. The digitization rate was chosen to accommodate the use of simple digital notch filters to remove 60 Hz (mains frequency) interference. Six of the 48 records contain a total of 33 beats that remain unclassified, because the cardiologist-annotators were unable to reach agreement on the beat types. The annotators were instructed to use all evidence available from both signals to identify every detectable QRS complex. The database contains seven episodes of loss of signal or noise so severe in both channels simultaneously that QRS complexes cannot be detected; these episodes are all quite short and have a total duration of 10s. In all of the remaining data, every QRS complex was annotated, about 109.000 in all. 
 
@@ -93,9 +91,19 @@ The training data of the multiclass problem is composed by the first 20.000 samp
 The algorithm is actually divided in four main phases : Reading data, Signal Processing, Feature Extraction and Classification. 
 
 ### Reading Data
+Data are available in the PhysioNet website, precisely at the link below:
+
+https://www.physionet.org/physiobank/database/mitdb/  
+Dataset is divided in three standard categories: 
+
+* MIT Signal files (.dat) are binary files containing samples of digitized signals. These store the waveforms, but they cannot be interpreted properly without their corresponding header files. These files are in the form: RECORDNAME.dat.
+* MIT Header files (.hea) are short text files that describe the contents of associated signal files. These files are in the form: RECORDNAME.hea.
+* MIT Annotation files are binary files containing annotations (labels that generally refer to specific samples in associated signal files). Annotation files should be read with their associated header files. If you see files in a directory called RECORDNAME.dat, or RECORDNAME.hea, any other file with the same name but different extension, for example RECORDNAME.atr, is an annotation file for that record.
+
+
 Raw signals are loaded with rdsamp function from WFDB package:
 ```
-wfdb.rdsamp(path_to_sample, samp_from, samp_to)
+wfdb.rdrecord(path_to_sample, samp_from, samp_to)
 ```
 where path_to_sample is the local path where the records are stored, and samp_from and samp_to define the portion of signal, contained in a range of frequencies, considered for processing.
 Each record in the database comprehends two raw signals, coming from the two channels of ECG recording. 
@@ -110,6 +118,9 @@ output_record = signal.lfilter(num_coefficents, den_coefficients, input_record)
 ```
 where num_coefficients and den_coefficients are the lists of exponent values of the transfer function of the numerator and the denominator respectively.  
 
+![Non-Filtered Signal](https://image.ibb.co/gCiVgS/prefiltered100.png)
+![Filtered Signal](https://image.ibb.co/f4pQFn/filtered100.png)
+
 ### Feature Extraction
 The KNN classifier expects as input a feature vector for each sample point.
 Values in such vector should describe the signal function trend with the purpose of detecting peaks.  
@@ -119,13 +130,51 @@ In the binary classification scope, each feature has assigned a value {-1,1} whe
 #### Multi-Class labels
 Multiclass labels are defined with an integer value in (0,38) corresponding to annotations symbols and -1 for samples that aren't peaks.
 ### KNN Classifier
-#### Parameters
-### Output
+As a preprocessing phase of our procedure, we split the whole dataset into training and test set, respectively with an amount of data of 80-20 percentage. 
+For our purposes of classification we trained a KNN classifier by means of a 5-fold Cross Validated Grid Search in the following space of parameters : 
+```
+parameters = {  
+'n_neighbors': [1, 3, 5, 7, 9],  
+'weights': ['uniform', 'distance'],  
+'p': [1,2]  
+}
+```
+According to accuracy score metric, the best parameters are: 
+```
+n_neighbors = 9  
+weights = uniform  
+p = 2
+```
+### GridSearch Results and Confusion Matrix
+|Report| Precision| Recall| F1-score| Support | 
+|-------|---------|--------|--------|---------|
+|not QRS| 1.00| 1.00| 1.00| 129529|
+|QRS | 0.80 | 0.85 | 0.82 | 471 | 
+|avg/total| 1.00 | 1.00 | 1.00 | 130000|
+
+|/ |QRS|not QRS|
+|-|---|-------|
+|QRS|129430 | 99 | 
+|not QRS| 72| 399|
+
+# Comparison with an algorithm that does not use a classifier
+The algorithm that we took into account is an QRS complex detector, of which you can find further information in the repository linked in the references.  
+|Signal|KNN Peaks Detected | Algorithm Peaks Detected | Actual #Peaks | KNN Det. Rate | Algorithm Det.Rate |
+|------|-------------------|--------------------------|---------------|---------------|--------------------|
+|100|2380|2272| 
+
+
+
+
+# Elapsed time for a single point (patient 100) in seconds
+Knn = ![equation](http://latex.codecogs.com/gif.latex?\frac{50}{650000}&space;=&space;7\cdot{10^{-5}})  
+No Classifier Algorithm = ![equation](http://latex.codecogs.com/gif.latex?\frac{0.26}{650000}&space;=&space;4\cdot{10^{-6}})
 
 ## References 
 * [QRS detection using KNN](https://www.researchgate.net/publication/257736741_QRS_detection_using_K-Nearest_Neighbor_algorithm_KNN_and_evaluation_on_standard_ECG_databases) - Indu Saini, Dilbag Singh, Arun Khosla
 * [MIT-BIH Arrhythmia Database](https://pdfs.semanticscholar.org/072a/0db716fb6f8332323f076b71554716a7271c.pdf) - Moody GB, Mark RG. The impact of the MIT-BIH Arrhythmia Database. IEEE Eng in Med and Biol 20(3):45-50 (May-June 2001). (PMID: 11446209)
 * [Components of a New Research Resource for Complex Physiologic Signals.](http://circ.ahajournals.org/content/101/23/e215.full) - Goldberger AL, Amaral LAN, Glass L, Hausdorff JM, Ivanov PCh, Mark RG, Mietus JE, Moody GB, Peng C-K, Stanley HE. PhysioBank, PhysioToolkit, and PhysioNet. 
 * [WFDB Usages](https://github.com/MIT-LCP/wfdb-python) 
+* [QRS complex Detection Algorithm](https://github.com/tru-hy/rpeakdetect/tree/master)
 
 
