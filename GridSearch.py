@@ -3,7 +3,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
 import pprint as pp
-import pandas as pd
+
 
 
 class GridSearch:
