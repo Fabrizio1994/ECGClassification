@@ -110,6 +110,9 @@ output_record = signal.lfilter(num_coefficents, den_coefficients, input_record)
 ```
 where num_coefficients and den_coefficients are the lists of exponent values of the transfer function of the numerator and the denominator respectively.  
 
+![alt text](https://ibb.co/iOusvn)
+![alt text](https://ibb.co/c6MGMS)
+
 ### Feature Extraction
 The KNN classifier expects as input a feature vector for each sample point.
 Values in such vector should describe the signal function trend with the purpose of detecting peaks.  
