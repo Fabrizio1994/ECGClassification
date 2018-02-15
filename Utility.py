@@ -1,4 +1,7 @@
 import wfdb
+from FeatureExtraction import FeatureExtraction
+
+fe = FeatureExtraction()
 
 
 class Utility:
@@ -20,3 +23,10 @@ class Utility:
         for line in f:
             signal.append(line.replace("\n",""))
         return signal
+
+    def plot_filtered_unfiltered(self,signal_name, record):
+        record = wfdb.rdrecord("samples/" + signal_name, sampto=2000)
+        wfdb.plot_wfdb(record, title="pre-filter")
+        record.p_signal = fe.passband_filter(record)
+        wfdb.plot_wfdb(record, title ="post-filter")
+
