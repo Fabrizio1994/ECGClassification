@@ -9,26 +9,25 @@ class FeatureExtraction:
         record = wfdb.rdrecord('samples/' + sample_name)
         first_channel = []
         second_channel = []
-        record.p_signal = self.passband_filter(record)
-        wfdb.plot_wfdb(record)
         for elem in record.p_signal:
             first_channel.append(elem[0])
             second_channel.append((elem[1]))
-        gradient_channel1 = np.gradient(first_channel)
-        gradient_channel2 = np.gradient(second_channel)
+        first_filtered = self.passband_filter(first_channel)
+        second_filtered = self.passband_filter(second_channel)
+        gradient_channel1 = np.gradient(first_filtered)
+        gradient_channel2 = np.gradient(second_filtered)
         features = []
         for i in range(record.sig_len):
             print(i)
             features.append([gradient_channel1[i], gradient_channel2[i]])
         return features
 
-    def passband_filter(self, record):
-        low_filter_output = signal.lfilter([-6, -12], [-1, -2], record.p_signal)
-        return self.highpass_filter(low_filter_output)
+    def passband_filter(self,record):
+        lowpass = signal.butter(1, 12 / (360 / 2.0), 'low')
+        highpass = signal.butter(1, 5 / (360 / 2.0), 'high')
+        ecg_low = signal.filtfilt(*lowpass, x=record)
+        return signal.filtfilt(*highpass, x=ecg_low)
 
-    #pass p_signal values here inside
-    def highpass_filter(self, record_signal):
-        return signal.lfilter([-16, -32], [-1], record_signal)
 
     def extract_multiclass_features(self, sample_name ):
         print("Extracting features for signal" + sample_name + "...")
