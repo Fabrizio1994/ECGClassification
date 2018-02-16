@@ -13,7 +13,7 @@ class GridSearch:
         # With a Pipeline object we can assemble several steps
         # that can be cross-validated together while setting different parameters.
         parameters = {
-            'n_neighbors': [1, 3, 5, 7, 9],
+            'n_neighbors': [1, 3, 5, 7, 9, 11, 13],
             'weights': ['uniform', 'distance'],
             'p': [1, 2]
         }
@@ -23,7 +23,7 @@ class GridSearch:
 
         grid_search = GridSearchCV(classifier,
                                    parameters,
-                                   scoring=metrics.make_scorer(metrics.accuracy_score),
+                                   scoring=metrics.make_scorer(metrics.f1_score),
                                    cv=5,
                                    n_jobs=-1,
                                    verbose=10)

@@ -2,6 +2,7 @@ import time
 from sklearn.neighbors import KNeighborsClassifier
 from FeatureExtraction import FeatureExtraction
 import numpy as np
+import wfdb
 
 fe = FeatureExtraction()
 
@@ -9,7 +10,8 @@ fe = FeatureExtraction()
 def knn_prediction(sample_name):
     KNNfeatures = np.asarray(fe.extract_features(sample_name))
     labels = np.asarray(fe.define_2class_labels(sample_name))
-    knn = KNeighborsClassifier(n_neighbors=9, weights='uniform', p=2)
+    annotations = wfdb.rdann('samples/100','atr')
+    knn = KNeighborsClassifier(n_neighbors=3, p=2)
     knn.fit(KNNfeatures, labels)
     start_time = time.time()
     pred = knn.predict(KNNfeatures)
@@ -32,7 +34,7 @@ def knn_prediction(sample_name):
         else:
             fn += 1
         i += 1
-
+    print("actual peaks :"+str(len(annotations.sample)))
     print("#peaks: " + str(peak_count))
     print("elapsed time: " + str(elapsed))
     print("FP = "+str(fp))
