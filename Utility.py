@@ -30,3 +30,13 @@ class Utility:
         record.p_signal = fe.passband_filter(record)
         wfdb.plot_wfdb(record, title ="post-filter")
 
+    def load_feature(self, sig_name):
+        features = []
+        labels = []
+        file = open("features/"+sig_name+".tsv","r")
+        for line in file:
+            vector = line.split("\t")
+            features.append([float(vector[0]),float(vector[1])])
+            labels.append(int(vector[2].replace("\n","")))
+        return features, labels
+

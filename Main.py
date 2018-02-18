@@ -2,4 +2,4 @@ from TwoClassClassification import TwoClassClassification
 from MultiClassClassification import MultiClassClassification
 
 #MultiClassClassification()
-TwoClassClassification()
+TwoClassClassification(48)

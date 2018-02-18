@@ -23,7 +23,7 @@ class GridSearch:
 
         grid_search = GridSearchCV(classifier,
                                    parameters,
-                                   scoring=metrics.make_scorer(metrics.f1_score),
+                                   scoring=metrics.make_scorer(metrics.accuracy_score),
                                    cv=5,
                                    n_jobs=-1,
                                    verbose=10)

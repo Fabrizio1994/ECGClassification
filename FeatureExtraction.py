@@ -4,8 +4,12 @@ import numpy as np
 
 
 class FeatureExtraction:
+
     def extract_features(self, sample_name):
-        print("Extracting features for signal"+sample_name+"...")
+        NON_BEAT_ANN = ['[', '!', ']', 'x', '(', ')', 'p', 't',
+                        'u', '`', '\'', '^', '|', '~', '+', 's',
+                        'T', '*', 'D', '=', '"', '@']
+        print("Extracting features for signal" + sample_name + "...")
         record = wfdb.rdrecord('samples/' + sample_name)
         first_channel = []
         second_channel = []
@@ -17,10 +21,29 @@ class FeatureExtraction:
         gradient_channel1 = np.gradient(first_filtered)
         gradient_channel2 = np.gradient(second_filtered)
         features = []
+        labels = []
+        annotation = wfdb.rdann('samples/' + sample_name, 'atr')
+        file = open("features/" + sample_name + ".tsv", "w")
+        j = 0
         for i in range(record.sig_len):
+            peak_location = annotation.sample
+            symbols = annotation.symbol
             print(i)
-            features.append([gradient_channel1[i], gradient_channel2[i]])
-        return features
+            if i in peak_location:
+                symbol = symbols[j]
+                if symbols[j] not in NON_BEAT_ANN:
+                    label = 1
+                else:
+                    label = -1
+                j+=1
+            else:
+                label = -1
+            labels.append(label)
+            gradient1 = gradient_channel1[i]
+            gradient2  = gradient_channel2[i]
+            features.append([gradient1, gradient2])
+            file.write("%s\t%s\t%s\n" % (gradient1, gradient2,label))
+        return features, labels
 
     def passband_filter(self,record):
         lowpass = signal.butter(1, 12 / (360 / 2.0), 'low')
@@ -50,17 +73,6 @@ class FeatureExtraction:
         for i in range(len(gradient_channel1)):
             features.append([gradient_channel1[i], gradient_channel2[i]])
         return features
-
-    def define_2class_labels(self, sample_name):
-        annotation = wfdb.rdann('samples/' + sample_name, 'atr')
-        labels = []
-        peak_location = annotation.sample
-        for i in range(650000):
-            if i in peak_location:
-                labels.append(1)
-            else:
-                labels.append(-1)
-        return np.asarray(labels)
 
     def define_multiclass_labels(self, sample_name, symbols):
         siglen = 650000
