@@ -21,17 +21,20 @@ class FeatureExtraction:
         gradient_channel2 = self.normalized_gradient(filtered_second_channel)
         print("actual peaks:"+ str(len(annotation.sample)))
 
-        return self.compute_features(gradient_channel1, gradient_channel2, annotation)
+        return self.compute_features(sample_name, gradient_channel1, gradient_channel2, annotation)
 
-    def compute_features(self, channel1, channel2, annotation):
+    def compute_features(self, sample_name, channel1, channel2, annotation):
+        file = open("features/" + sample_name.replace("sample/","") + ".tsv", "w")
         features = []
         labels = []
         for i in range(len(channel1)):
             features.append([channel1[i], channel2[i]])
             if i in annotation.sample:
                 labels.append(1)
+                file.write("%s\t%s\t%s\n" % (channel1[i], channel2[i], str(1)))
             else:
                 labels.append(-1)
+                file.write("%s\t%s\t%s\n" % (channel1[i], channel2[i], str(-1)))
         return np.asarray(features), np.asarray(labels)
 
     def normalized_gradient(self, channel):
