@@ -1,4 +1,5 @@
 import wfdb
+import csv
 import numpy as np
 
 class Utility:
@@ -21,3 +22,16 @@ class Utility:
         new_sample = np.asarray(new_sample)
         new_symbol = np.asarray(new_symbol)
         wfdb.wrann(sample_name.replace("sample/", ""),"atr", new_sample, new_symbol)
+
+
+    def extract_features(self, sample_name):
+        features = []
+        labels = []
+        with open(sample_name, 'r') as tsvin:
+            tsvin = csv.reader(tsvin, delimiter='\t')
+            for line in tsvin:
+                features.append([line[0], line[1]])
+                labels.append(line[2])
+        return features, labels
+
+
