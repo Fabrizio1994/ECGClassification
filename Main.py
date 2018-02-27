@@ -10,7 +10,7 @@ fe = FeatureExtraction()
 ut = Utility()
 val = Validation()
 
-train_features, train_labels = fe.extract_from_all()
+train_features, train_labels = ut.read_signal('100.tsv')
 val.validate_for_all(train_features, train_labels)
 #GridSearch(train_features, train_labels, ["not QRS", "QRS"])'''
 

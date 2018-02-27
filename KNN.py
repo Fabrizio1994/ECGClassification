@@ -3,7 +3,7 @@ class KNN:
     def __init__(self):
         self.classifier = KNeighborsClassifier(algorithm='auto', leaf_size=30, metric='minkowski',
            metric_params=None, n_jobs=1, n_neighbors=5, p=2,
-           weights='distance')
+           weights='uniform')
 
     def evaluate_results(self, predict, Ytest):
         TP = 0
@@ -23,7 +23,7 @@ class KNN:
                 else:
                     FN += 1
             j += 1
-        file = open("report.tsv","a")
+        file = open("report.tsv", "a")
         file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\n"%(str(TP),str(TN),str(FP),str(FN)))
 
     def clean_prediction(self, predict):
