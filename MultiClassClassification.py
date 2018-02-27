@@ -15,7 +15,7 @@ class MultiClassClassification:
         names = []
         features = []
         labels = []
-        for file in os.listdir(os.getcwd()+"/samples"):
+        for file in os.listdir(os.getcwd()+"/sample"):
             sig_name = file.split(".")[0]
             if sig_name not in names:
                 names.append(sig_name)

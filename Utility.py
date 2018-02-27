@@ -1,4 +1,5 @@
 import wfdb
+import csv
 import numpy as np
 import os
 
@@ -50,7 +51,6 @@ class Utility:
             features.append([float(vector[0]), float(vector[1])])
             labels.append(int(vector[2].replace("\n", "")))
         return np.asarray(features), np.asarray(labels)
-
 
 
 
