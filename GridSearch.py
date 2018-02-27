@@ -13,7 +13,7 @@ class GridSearch:
         # With a Pipeline object we can assemble several steps
         # that can be cross-validated together while setting different parameters.
         parameters = {
-            'n_neighbors': [1, 3, 5, 7, 9, 11, 13],
+            'n_neighbors': [1, 3, 5, 7, 9, 11, 13, 15, 17,19,21,23],
             'weights': ['uniform', 'distance'],
             'p': [1, 2]
         }

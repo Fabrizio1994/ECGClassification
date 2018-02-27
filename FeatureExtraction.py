@@ -1,7 +1,7 @@
 import wfdb
 from scipy import signal
 import numpy as np
-
+import os
 
 class FeatureExtraction:
     def extract_features(self, sample_name):
@@ -42,21 +42,23 @@ class FeatureExtraction:
         #gradient = np.gradient(channel)
         gradient_norm = np.sqrt(np.sum(np.square(gradient)))
         #gradient_norm = max(gradient)
-        normalized = [x / gradient_norm for x in gradient]
+        normalized = np.divide(gradient, gradient_norm)
         return normalized
 
     def overwrite_signal(self, first_channel, second_channel, record):
-        for i in range(len(record.p_signal)-1):
+        for i in range(len(record.p_signal)):
             record.p_signal[i][0] = first_channel[i]
             record.p_signal[i][1] = second_channel[i]
         return record
 
     def passband_filter(self, channel):
         freq = 360.0/2.0
+        #b,a = signal.butter(1,[5/freq, 12/freq], btype="band")
         b, a = signal.butter(2, 11/freq, btype='lowpass')
         d, c = signal.butter(1, 5/freq, btype='highpass')
         #new_channel = signal.lfilter(d, c, signal.lfilter(b, a, channel))
-        new_channel = signal.filtfilt(b, a, signal.filtfilt(d, c, channel))
+        new_channel = signal.filtfilt(d,c, signal.filtfilt(b, a, channel))
+        #new_channel = signal.filtfilt(b,a, channel)
         return new_channel
 
     def func_filter(self, channel):
@@ -67,3 +69,16 @@ class FeatureExtraction:
         #new_channel = signal.filtfilt(b, a, signal.filtfilt(d, c, channel))
         new_channel = signal.lfilter(b, a, signal.lfilter(d, c, channel))
         return new_channel
+
+    def extract_from_all(self):
+        features = []
+        labels = []
+        for signal_name in os.listdir("sample"):
+            if signal_name.endswith(".dat"):
+                name = signal_name.replace(".dat","")
+                feature, label = self.extract_features('sample/'+name)
+                for feat in feature:
+                    features.append(feat)
+                labels.extend(label)
+        return np.asarray(features), np.asarray(labels)
+
