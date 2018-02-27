@@ -4,19 +4,14 @@ from FeatureExtraction import FeatureExtraction
 from KNN import KNN
 from GridSearch import GridSearch
 from Utility import Utility
+from Validation import Validation
 
 fe = FeatureExtraction()
 ut = Utility()
+val = Validation()
 
-
-
-#train_features, train_labels = fe.extract_features('sample/100')
-#test_features, test_labels = fe.extract_features('sample/215')
-
-test_features, test_labels = ut.extract_features('features/100.tsv')
-
-
-#knn = KNN(train_features, train_labels, test_features, test_labels)
-#GridSearch(train_features, train_labels, test_features, test_labels, ["not QRS", "QRS"])
+train_features, train_labels = fe.extract_from_all()
+val.validate_for_all(train_features, train_labels)
+#GridSearch(train_features, train_labels, ["not QRS", "QRS"])'''
 
 
