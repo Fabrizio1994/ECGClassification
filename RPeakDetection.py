@@ -48,29 +48,37 @@ def detect_beats(
     lowpass = scipy.signal.butter(1, highfreq / (rate / 2.0), 'low')
     highpass = scipy.signal.butter(1, lowfreq / (rate / 2.0), 'high')
     # TODO: Could use an actual bandpass filter
+
+    # x is the array of data to be filtered.
     ecg_low = scipy.signal.filtfilt(*lowpass, x=ecg)
     ecg_band = scipy.signal.filtfilt(*highpass, x=ecg_low)
 
     # Square (=signal power) of the first difference of the signal
-    decg = np.diff(ecg_band)
-    decg_power = decg ** 2
+    # This is done to obtain a positive-valued signal
+    diff_ecg = np.diff(ecg_band)
+    diff_ecg_powered = diff_ecg ** 2
 
     # Robust threshold and normalizator estimation
+    # The thresholding process eliminates spurious noise spikes and tends to reduce the number of FP detections
     thresholds = []
     max_powers = []
-    for i in range(int(len(decg_power) / ransac_window_size)):
+    for i in range(int(len(diff_ecg_powered) / ransac_window_size)):
+        #slice is used to slice a given sequence. Slice represents the indices specified by range(start, stop, step)
         sample = slice(i * ransac_window_size, (i + 1) * ransac_window_size)
-        d = decg_power[sample]
+        d = diff_ecg_powered[sample]
         thresholds.append(0.5 * np.std(d))
         max_powers.append(np.max(d))
 
     threshold = np.median(thresholds)
     max_power = np.median(max_powers)
-    decg_power[decg_power < threshold] = 0
+    diff_ecg_powered[diff_ecg_powered < threshold] = 0
 
-    decg_power /= max_power
-    decg_power[decg_power > 1.0] = 1.0
-    square_decg_power = decg_power ** 2
+    diff_ecg_powered /= max_power
+    diff_ecg_powered[diff_ecg_powered > 1.0] = 1.0
+    square_decg_power = diff_ecg_powered ** 2
+
+    #Shannon energy transformation improves the detection accuracy under ECG signal with smaller and wider QRS complexes
+    #To compute Shannon energy, the thresholded energy signal is first normalized.
 
     shannon_energy = -square_decg_power * np.log(square_decg_power)
     shannon_energy[~np.isfinite(shannon_energy)] = 0.0
