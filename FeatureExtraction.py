@@ -4,13 +4,13 @@ import numpy as np
 import os
 
 class FeatureExtraction:
-    def extract_features(self, sample_name):
+    def extract_features(self, sample_name, split_size=650000):
         print("Extracting features for signal " + sample_name + "...")
         record = wfdb.rdrecord(sample_name)
         annotation = wfdb.rdann(sample_name, 'atr', return_label_elements=["symbol","label_store","description"])
         first_channel = []
         second_channel = []
-        for elem in record.p_signal:
+        for elem in record.p_signal[:split_size]:
             first_channel.append(elem[0])
             second_channel.append(elem[1])
         filtered_first_channel = self.passband_filter(first_channel)
@@ -39,6 +39,7 @@ class FeatureExtraction:
 
     def normalized_gradient(self, channel):
         gradient = np.diff(channel)
+        #gradient = []
         #gradient = np.gradient(channel)
         gradient_norm = np.sqrt(np.sum(np.square(gradient)))
         #gradient_norm = max(gradient)
@@ -55,10 +56,10 @@ class FeatureExtraction:
         freq = 360.0/2.0
         #b,a = signal.butter(1,[5/freq, 12/freq], btype="band")
         b, a = signal.butter(2, 11/freq, btype='lowpass')
-        d, c = signal.butter(1, 5/freq, btype='highpass')
+        #d, c = signal.butter(1, 5/freq, btype='highpass')
         #new_channel = signal.lfilter(d, c, signal.lfilter(b, a, channel))
-        new_channel = signal.filtfilt(d,c, signal.filtfilt(b, a, channel))
-        #new_channel = signal.filtfilt(b,a, channel)
+        #new_channel = signal.filtfilt(d,c, signal.filtfilt(b, a, channel))
+        new_channel = signal.lfilter(b,a, channel)
         return new_channel
 
     def func_filter(self, channel):
@@ -70,13 +71,13 @@ class FeatureExtraction:
         new_channel = signal.lfilter(b, a, signal.lfilter(d, c, channel))
         return new_channel
 
-    def extract_from_all(self):
+    def extract_from_all(self,split_size):
         features = []
         labels = []
         for signal_name in os.listdir("sample"):
             if signal_name.endswith(".dat"):
                 name = signal_name.replace(".dat","")
-                feature, label = self.extract_features('sample/'+name)
+                feature, label = self.extract_features('sample/'+name, split_size=split_size)
                 for feat in feature:
                     features.append(feat)
                 labels.extend(label)

@@ -5,13 +5,15 @@ from KNN import KNN
 from GridSearch import GridSearch
 from Utility import Utility
 from Validation import Validation
+import os
 
 fe = FeatureExtraction()
 ut = Utility()
 val = Validation()
 
-train_features, train_labels = ut.read_signal('100.tsv')
-val.validate_for_all(train_features, train_labels)
-#GridSearch(train_features, train_labels, ["not QRS", "QRS"])'''
+for name in os.listdir("features"):
+    signal_name = name.replace(".tsv","")
+    train_features, train_labels = fe.extract_features("sample/"+signal_name)
+    GridSearch(signal_name, train_features, train_labels, ["not QRS", "QRS"])
 
 

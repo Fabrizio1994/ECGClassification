@@ -13,13 +13,13 @@ class Validation:
         print("training KNN...")
         classifier.fit(train_features, train_labels)
         for sample in os.listdir("features"):
-            if(sample.endswith('.tsv')):
+            if sample.endswith('.tsv'):
                 print("validation for "+sample)
                 self.validate(classifier, sample)
 
     def validate(self, classifier, test_sample):
-        test_features, test_labels = ut.read_signal(test_sample)
-        file = open("report.tsv", "a")
+        test_features, test_labels = fe.extract_features("sample/"+test_sample.replace(".tsv",""))
+        file = open("report_grad.tsv", "a")
         file.write("%s\n" %(test_sample))
         predicted = classifier.predict(test_features)
         knn.evaluate_results(predicted, test_labels)

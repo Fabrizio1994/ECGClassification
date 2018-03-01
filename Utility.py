@@ -52,5 +52,14 @@ class Utility:
             labels.append(int(vector[2].replace("\n", "")))
         return np.asarray(features), np.asarray(labels)
 
+    def write_csv_signal(self, signal_name):
+        file1 = open("csv/"+signal_name+"_1.csv", "w")
+        file2 = open("csv/"+signal_name+"_2.csv", "w")
+        record = wfdb.rdrecord("sample/"+signal_name)
+        for elem in record.p_signal:
+            file1.write("%s\n" % (str(elem[0])))
+            file2.write("%s\n" % (str(elem[1])))
+        file1.close()
+        file2.close()
 
 

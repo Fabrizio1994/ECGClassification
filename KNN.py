@@ -23,7 +23,7 @@ class KNN:
                 else:
                     FN += 1
             j += 1
-        file = open("report.tsv", "a")
+        file = open("report_grad.tsv", "a")
         file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\n"%(str(TP),str(TN),str(FP),str(FN)))
 
     def clean_prediction(self, predict):
