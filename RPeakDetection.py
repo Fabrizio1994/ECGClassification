@@ -101,5 +101,5 @@ if __name__ == '__main__':
     start_time = time.time()
     peaks = detect_beats(ecg, rate)
     elapsed = time.time() - start_time
-    sys.stdout.write("\n".join(map(str,peaks)))
+    sys.stdout.write("\n".join(map(str, peaks)))
     sys.stdout.write("\n")

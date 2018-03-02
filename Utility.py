@@ -9,25 +9,40 @@ class Utility:
         ,'"', '@']
 
     # CODE TO CLEAN SIGNAL FROM NON BEAT ANNOTATIONS
-    def remove_non_beat(self, sample_name):
+    def clean_signal(self, sample_name):
         annotation = wfdb.rdann(sample_name,"atr")
+        record = wfdb.rdrecord(sample_name)
+        channel = []
+        for elem in record.p_signal:
+            channel.append(elem[0])
+        window = 5
         new_sample = []
-        new_symbol= []
+        new_symbol = []
         samples = annotation.sample
         symbols = annotation.symbol
         for j in range(len(samples)):
+            max = channel[samples[j]]
+            index_max = samples[j]
             if symbols[j] not in self.NON_BEAT_ANN:
-                new_sample.append(samples[j])
-                new_symbol.append(symbols[j])
+                for w in range(1, window + 1):
+                    if channel[samples[j] + w] > max:
+                        max = channel[samples[j] + w]
+                        index_max = samples[j] + w
+                    elif channel[samples[j] - w] > max:
+                        max = channel[samples[j] - w]
+                        index_max = samples[j] - w
+            new_sample.append(index_max)
+            new_symbol.append(symbols[j])
 
         new_sample = np.asarray(new_sample)
         new_symbol = np.asarray(new_symbol)
-        wfdb.wrann(sample_name.replace("sample/", ""),"atr", new_sample, new_symbol)
+
+        wfdb.wrann(sample_name.replace("sample/", ""), "atr", new_sample, new_symbol)
 
     def clean_all(self):
         for signal_name in os.listdir("sample"):
             if signal_name.endswith(".atr"):
-                self.remove_non_beat("sample/"+signal_name.replace(".atr",""))
+                self.clean_signal("sample/"+signal_name.replace(".atr",""))
 
     def read_all(self):
         features = []
