@@ -1,13 +1,15 @@
 from FeatureExtraction import FeatureExtraction
 from RPeakEvaluation import RPeakEvaluation
+from Utility import Utility
 from GridSearch import GridSearch
 import os
 
 fe = FeatureExtraction()
 rp = RPeakEvaluation()
-
-rp.validate_r_peak()
-
+ut = Utility()
+#rp.validate_r_peak()
+ut.clean_all()
+#ut.clean_signal('sample/108')
 
 #for name in os.listdir("features"):
 #    signal_name = name.replace(".tsv","")

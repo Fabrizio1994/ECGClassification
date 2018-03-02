@@ -55,7 +55,7 @@ class RPeakEvaluation:
         TP = 0
         FP = 0
         FN = 0
-        window = 5
+
         i = 0
         j = 0
         while i < len(prediction) and j < len(locations):
@@ -63,25 +63,17 @@ class RPeakEvaluation:
                 TP += 1
                 i += 1
                 j += 1
+            elif prediction[i] > locations[j]:
+                FN += 1
+                j += 1
             else:
-                found = False
-                for w in range(1, window + 1):
-                    if (prediction[i] + w) == locations[j] or (prediction[i] - w) == locations[j] and not found:
-                        TP += 1
-                        i += 1
-                        j += 1
-                        found = True
-                if not found:
-                    if prediction[i] > locations[j]:
-                        FN += 1
-                        j += 1
-                    else:
-                        FP += 1
-                        i += 1
+                FP += 1
+                i += 1
+
         FN += len(locations) - j
         FP += len(prediction) - i
 
         TN = length - TP - FP - FN
-        file = open("report_rpeak.tsv", "a")
+        file = open("report_rpeak_40.tsv", "a")
         file.write("%s_%s\n" %(signame, channel_number))
         file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\n" % (str(TP), str(TN), str(FP), str(FN)))
