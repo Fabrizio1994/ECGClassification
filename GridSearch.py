@@ -13,9 +13,9 @@ class GridSearch:
         # With a Pipeline object we can assemble several steps
         # that can be cross-validated together while setting different parameters.
         parameters = {
-            'n_neighbors': [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21],
+            'n_neighbors': [1, 3, 5, 7, 9, 11],
             'weights': ['uniform', 'distance'],
-            'p': [1, 2, 3]
+            'p': [1, 2]
         }
         ## Create a Grid-Search-Cross-Validation object
         ## to find in an automated fashion the best combination of parameters
@@ -44,7 +44,7 @@ class GridSearch:
 
         print("Best Parameters:")
         pp.pprint(grid_search.best_params_)
-        text_file = open("LOW_Classification_report.txt", "a")
+        text_file = open("HIGH_Classification_report.txt", "a")
         text_file.write("%s\n"%(signal_name))
         for param in grid_search.best_params_:
             text_file.write("%s\n" % grid_search.best_params_[param])
@@ -84,7 +84,7 @@ class GridSearch:
                                        normalized_accuracy)
 
     def classification_report_txt(self, report, confusion_matrix, accuracy):
-        text_file = open("LOW_Classification_report.txt", "a")
+        text_file = open("HIGH_Classification_report.txt", "a")
         text_file.write("report:%s\nconfusion matrix: %s\nnormalized accuracy: %s\n" % (report,
                         confusion_matrix, accuracy))
         text_file.close()

@@ -1,7 +1,7 @@
 import wfdb
-import csv
 import numpy as np
 import os
+from subprocess import call
 
 class Utility:
 
@@ -62,4 +62,9 @@ class Utility:
         file1.close()
         file2.close()
 
+    def get_command(self, file_name):
+        return "python2 RPeakDetection.py 360  < csv/" + file_name+ " > rpeak_output/" + file_name
 
+    def run_rpeak(self):
+        for file_name in os.listdir("csv"):
+            os.system(self.get_command(file_name))
