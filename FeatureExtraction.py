@@ -55,11 +55,11 @@ class FeatureExtraction:
     def passband_filter(self, channel):
         freq = 360.0/2.0
         #b,a = signal.butter(1,[5/freq, 12/freq], btype="band")
-        b, a = signal.butter(2, 11/freq, btype='lowpass')
-        #d, c = signal.butter(1, 5/freq, btype='highpass')
+        #b, a = signal.butter(2, 11/freq, btype='lowpass')
+        b, a = signal.butter(1, 5/freq, btype='highpass')
         #new_channel = signal.lfilter(d, c, signal.lfilter(b, a, channel))
         #new_channel = signal.filtfilt(d,c, signal.filtfilt(b, a, channel))
-        new_channel = signal.lfilter(b,a, channel)
+        new_channel = signal.filtfilt(b, a, channel)
         return new_channel
 
     def func_filter(self, channel):

@@ -103,5 +103,3 @@ if __name__ == '__main__':
     elapsed = time.time() - start_time
     sys.stdout.write("\n".join(map(str,peaks)))
     sys.stdout.write("\n")
-    print("number of peaks : "+str(len(peaks)))
-    print("elapsed time: " + str(elapsed))
