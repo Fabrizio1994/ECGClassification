@@ -10,53 +10,51 @@ class Utility:
 
     # CODE TO CLEAN SIGNAL FROM NON BEAT ANNOTATIONS
     def clean_signal(self, sample_name):
+        print(sample_name)
         annotation = wfdb.rdann(sample_name, "atr")
         record = wfdb.rdrecord(sample_name)
         channel = []
         for elem in record.p_signal:
             channel.append(elem[0])
-        window = 20
+        window = 5
+        samples = annotation.sample.tolist()
+        symbols = annotation.symbol
+        new_sample, new_symbol = self.update_annotations(channel, samples, symbols, window)
+        diff = self.check_convergence(new_sample, samples)
+        while diff != 0:
+            samples = new_sample
+            new_sample, new_symbol = self.update_annotations(channel, samples, symbols, window)
+            diff = self.check_convergence(new_sample, samples)
+        print(diff)
+        new_sample = np.asarray(new_sample)
+        new_symbol = np.asarray(new_symbol)
+        wfdb.wrann(sample_name.replace("sample/", ""), "atr", new_sample, new_symbol)
 
+    def check_convergence(self, new_sample, samples):
+        diff = 0
+        for j in range(len(samples)):
+            if samples[j] != new_sample[j]:
+                diff += 1
+                print(samples[j], new_sample[j])
+        return diff
+
+    def update_annotations(self, channel, samples, symbols, window):
         new_sample = []
         new_symbol = []
-        samples = annotation.sample
-        symbols = annotation.symbol
-        while samples != new_sample:
-            annotation = wfdb.rdann(sample_name, 'atr')
-            new_sample = []
-            new_symbol = []
-            samples = annotation.sample
-
-            for j in range(len(samples)):
-                if symbols[j] not in self.NON_BEAT_ANN:
-                    if channel[samples[j]] > 0:
-                        max = channel[samples[j]]
-                        index_max = samples[j]
-                        for w in range(1, window + 1):
-                            if channel[samples[j] + w] > max:
-                                max = channel[samples[j] + w]
-                                index_max = samples[j] + w
-                            elif channel[samples[j] - w] > max:
-                                max = channel[samples[j] - w]
-                                index_max = samples[j] - w
-                        new_sample.append(index_max)
-                        new_symbol.append(symbols[j])
-                    else:
-                        min = 0
-                        index_min = 0
-                        for w in range(1, window + 1):
-                            if channel[samples[j] + w] < min:
-                                min = channel[samples[j] + w]
-                                index_min = samples[j] + w
-                            elif channel[samples[j] - w] < min:
-                                min = channel[samples[j] - w]
-                                index_min = samples[j] - w
-                        new_sample.append(index_min)
-                        new_symbol.append(symbols[j])
-            new_sample = np.asarray(new_sample)
-            new_symbol = np.asarray(new_symbol)
-            print(sample_name)
-            wfdb.wrann(sample_name.replace("sample/", ""), "atr", new_sample, new_symbol)
+        for j in range(len(samples)):
+            if symbols[j] not in self.NON_BEAT_ANN:
+                max = abs(channel[samples[j]])
+                index_max = samples[j]
+                for w in range(1, window + 1):
+                    if abs(channel[samples[j] + w]) > max:
+                        max = abs(channel[samples[j] + w])
+                        index_max = samples[j] + w
+                    elif abs(channel[samples[j] - w]) > max:
+                        max = abs(channel[samples[j] - w])
+                        index_max = samples[j] - w
+                new_sample.append(index_max)
+                new_symbol.append(symbols[j])
+        return new_sample, new_symbol
 
     def clean_all(self):
         for signal_name in os.listdir("sample"):

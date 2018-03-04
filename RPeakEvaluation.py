@@ -29,7 +29,7 @@ class RPeakEvaluation:
     def get_predictions(self, signame, n_channel):
         record = wfdb.rdrecord('sample/' + signame)
         channel = []
-        window = 20
+        window = 40
         for elem in record.p_signal:
             channel.append(elem[n_channel])
         prediction = []
@@ -43,13 +43,13 @@ class RPeakEvaluation:
 
     def get_r_peak(self, channel, value, window):
         indexes = range(int(value-window/2), int(value+window/2))
-        max = channel[value]
-        index_max = value
+        max = abs(channel[value])
+        rpeak = value
         for index in indexes:
-            if channel[index] > max:
-                max = channel[index]
-                index_max = index
-        return index_max
+            if abs(channel[index]) > max:
+                max = abs(channel[index])
+                rpeak = index
+        return rpeak
 
     def evaluate_prediction(self, prediction, locations, signame, channel_number, length):
         TP = 0
@@ -74,6 +74,6 @@ class RPeakEvaluation:
         FP += len(prediction) - i
 
         TN = length - TP - FP - FN
-        file = open("report_rpeak_40.tsv", "a")
-        file.write("%s_%s\n" %(signame, channel_number))
+        file = open("report_rpeak_"+str(channel_number)+".tsv", "a")
+        file.write("%s\n" %(signame))
         file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\n" % (str(TP), str(TN), str(FP), str(FN)))

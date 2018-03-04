@@ -6,9 +6,8 @@ import os
 
 fe = FeatureExtraction()
 rp = RPeakEvaluation()
-ut = Utility()
-#rp.validate_r_peak()
-ut.clean_all()
+rp.validate_r_peak()
+
 #ut.clean_signal('sample/108')
 
 #for name in os.listdir("features"):
