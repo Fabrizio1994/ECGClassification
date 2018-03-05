@@ -1,57 +1,53 @@
 import wfdb
 import numpy as np
 import os
-from subprocess import call
+from GridSearch import GridSearch
+from FeatureExtraction import FeatureExtraction
+
+fe = FeatureExtraction()
 
 class Utility:
 
     NON_BEAT_ANN = [ '[', '!', ']', 'x', '(', ')', 'p', 't', 'u', '`', '\'', '^', '|', '~', '+', 's', 'T', '*', 'D', '='
         ,'"', '@']
 
-    # CODE TO CLEAN SIGNAL FROM NON BEAT ANNOTATIONS
     def clean_signal(self, sample_name):
         print(sample_name)
-        annotation = wfdb.rdann(sample_name, "atr")
         record = wfdb.rdrecord(sample_name)
         channel = []
         for elem in record.p_signal:
             channel.append(elem[0])
-        window = 5
-        samples = annotation.sample.tolist()
-        symbols = annotation.symbol
-        new_sample, new_symbol = self.update_annotations(channel, samples, symbols, window)
-        diff = self.check_convergence(new_sample, samples)
-        while diff != 0:
-            samples = new_sample
-            new_sample, new_symbol = self.update_annotations(channel, samples, symbols, window)
-            diff = self.check_convergence(new_sample, samples)
-        print(diff)
+        samples, symbols = self.remove_non_beat(sample_name)
+        new_sample, new_symbol = self.update_annotations(channel, samples, symbols)
         new_sample = np.asarray(new_sample)
         new_symbol = np.asarray(new_symbol)
         wfdb.wrann(sample_name.replace("sample/", ""), "atr", new_sample, new_symbol)
 
-    def check_convergence(self, new_sample, samples):
-        diff = 0
-        for j in range(len(samples)):
-            if samples[j] != new_sample[j]:
-                diff += 1
-                print(samples[j], new_sample[j])
-        return diff
+    def remove_non_beat(self, sample_name):
+        annotation = wfdb.rdann(sample_name, "atr")
+        non_beat_ann = []
+        non_beat_sym = []
+        samples = annotation.sample
+        symbols = annotation.symbol
+        for j in range(len(annotation.sample)):
+            if symbols[j] not in self.NON_BEAT_ANN:
+                non_beat_ann.append(samples[j])
+                non_beat_sym.append(symbols[j])
+        return non_beat_ann, non_beat_sym
 
-    def update_annotations(self, channel, samples, symbols, window):
+    def update_annotations(self, channel, samples, symbols):
         new_sample = []
         new_symbol = []
         for j in range(len(samples)):
-            if symbols[j] not in self.NON_BEAT_ANN:
-                max = abs(channel[samples[j]])
-                index_max = samples[j]
-                for w in range(1, window + 1):
-                    if abs(channel[samples[j] + w]) > max:
-                        max = abs(channel[samples[j] + w])
-                        index_max = samples[j] + w
-                    elif abs(channel[samples[j] - w]) > max:
-                        max = abs(channel[samples[j] - w])
-                        index_max = samples[j] - w
+                annotated_loc = samples[j]
+                qrs_region =[q for q in range(annotated_loc-5,annotated_loc+6)]
+                qrs_values = [channel[samples[j]+q] for q in qrs_region]
+                index_max = qrs_region[0]
+                max = abs(qrs_values[0])
+                for j in range(len(qrs_region)):
+                    if abs(qrs_values[j]) > (max):
+                        max = abs(qrs_values[j])
+                        index_max = qrs_region[j]
                 new_sample.append(index_max)
                 new_symbol.append(symbols[j])
         return new_sample, new_symbol
@@ -60,6 +56,13 @@ class Utility:
         for signal_name in os.listdir("sample"):
             if signal_name.endswith(".atr"):
                 self.clean_signal("sample/"+signal_name.replace(".atr",""))
+
+    def remove_non_beat_for_all(self):
+        for signal_name in os.listdir("sample"):
+            if signal_name.endswith(".atr"):
+                name = signal_name.replace(".atr","")
+                new_sample, new_symbol = self.remove_non_beat("sample/"+name)
+                wfdb.wrann(name,"atr", np.asarray(new_sample), np.asarray(new_symbol))
 
     def read_all(self):
         features = []
@@ -100,3 +103,10 @@ class Utility:
     def run_rpeak(self):
         for file_name in os.listdir("csv"):
             os.system(self.get_command(file_name))
+
+    def run_knn(self):
+        for name in os.listdir("features"):
+            signal_name = name.replace(".tsv", "")
+            train_features, train_labels = fe.extract_features("sample/" + signal_name)
+            GridSearch(signal_name, train_features, train_labels, ["not QRS", "QRS"])
+

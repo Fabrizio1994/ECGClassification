@@ -26,28 +26,29 @@ class RPeakEvaluation:
                 self.evaluate_prediction(prediction1, locations, signame, 1, self.SIZE_LAST_20)
                 self.evaluate_prediction(prediction2, locations, signame, 2, self.SIZE_LAST_20)
 
-    def get_predictions(self, signame, n_channel):
+    def get_predictions(self, signame, n_channel, total_size=SIG_LEN,
+                        test_size=SIZE_LAST_20):
         record = wfdb.rdrecord('sample/' + signame)
         channel = []
-        window = 40
+        window = 10
         for elem in record.p_signal:
             channel.append(elem[n_channel])
         prediction = []
         file = open("rpeak_output/" + str(signame) + "_"+str(n_channel+1)+".csv", "r")
         for line in file:
             value = int(line.replace("\n", ""))
-            if value > self.SIG_LEN - self.SIZE_LAST_20:
+            if value > total_size - test_size:
                 real_peak_index = self.get_r_peak(channel, value, window)
                 prediction.append(real_peak_index)
         return prediction
 
     def get_r_peak(self, channel, value, window):
-        indexes = range(int(value-window/2), int(value+window/2))
+        indexes = range(int(value-window/2), int(value+window/2+1))
         max = abs(channel[value])
         rpeak = value
         for index in indexes:
             if abs(channel[index]) > max:
-                max = abs(channel[index])
+                max = channel[index]
                 rpeak = index
         return rpeak
 
@@ -59,7 +60,8 @@ class RPeakEvaluation:
         i = 0
         j = 0
         while i < len(prediction) and j < len(locations):
-            if prediction[i] == locations[j]:
+            qrs_region = [q for q in range(locations[j] - 5, locations[j] + 6)]
+            if prediction[i] in qrs_region:
                 TP += 1
                 i += 1
                 j += 1
@@ -74,6 +76,6 @@ class RPeakEvaluation:
         FP += len(prediction) - i
 
         TN = length - TP - FP - FN
-        file = open("report_rpeak_"+str(channel_number)+".tsv", "a")
+        file = open("report_"+str(channel_number)+".tsv", "a")
         file.write("%s\n" %(signame))
         file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\n" % (str(TP), str(TN), str(FP), str(FN)))
