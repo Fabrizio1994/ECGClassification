@@ -44,7 +44,7 @@ class GridSearch:
 
         print("Best Parameters:")
         pp.pprint(grid_search.best_params_)
-        text_file = open("HIGH_LOW_Classification_report.txt", "a")
+        text_file = open("PASSBAND_Classification_report.txt", "a")
         text_file.write("%s\n"%(signal_name))
         for param in grid_search.best_params_:
             text_file.write("%s\n" % grid_search.best_params_[param])
@@ -84,7 +84,7 @@ class GridSearch:
                                        normalized_accuracy)
 
     def classification_report_txt(self, report, confusion_matrix, accuracy):
-        text_file = open("HIGH_LOW_Classification_report.txt", "a")
+        text_file = open("PASSBAND_Classification_report.txt", "a")
         text_file.write("report:%s\nconfusion matrix: %s\nnormalized accuracy: %s\n" % (report,
                         confusion_matrix, accuracy))
         text_file.close()
