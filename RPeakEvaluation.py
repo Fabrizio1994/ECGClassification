@@ -1,10 +1,9 @@
 import os
 from KNN import KNN
 from FeatureExtraction import FeatureExtraction
-from Utility import Utility
 import wfdb
+import numpy as np
 
-ut = Utility()
 fe = FeatureExtraction()
 knn = KNN()
 
@@ -15,22 +14,34 @@ class RPeakEvaluation:
     SIG_LEN = 650000
 
     def validate_r_peak(self):
-        for name in os.listdir("features"):
-            if name.endswith('.tsv'):
-                signame = name.replace(".tsv", "")
+        window_sizes = [10, 20, 50]
+        annotation_type = ['beat', 'cleaned']
+        for name in os.listdir("sample"):
+            if name.endswith('.atr'):
+                signame = name.replace(".atr", "")
                 print(signame)
-                annotation = wfdb.rdann("sample/"+signame, 'atr')
-                locations = list(filter(lambda x: x > (self.SIG_LEN - self.SIZE_LAST_20), annotation.sample))
-                prediction1 = self.get_predictions(signame, 0)
-                prediction2 = self.get_predictions(signame, 1)
-                self.evaluate_prediction(prediction1, locations, signame, 1, self.SIZE_LAST_20)
-                self.evaluate_prediction(prediction2, locations, signame, 2, self.SIZE_LAST_20)
+                for type in annotation_type:
+                    annotation = wfdb.rdann("annotations/"+ type + '/' + signame, 'atr')
+                    locations = list(filter(lambda x: x > (self.SIG_LEN - self.SIZE_LAST_20), annotation.sample))
 
-    def get_predictions(self, signame, n_channel, total_size=SIG_LEN,
+                    for size in window_sizes:
+                        prediction = self.get_predictions(signame, 0, window_size=size)
+                        labels = self.get_labels(locations, size)
+                        self.evaluate_prediction(prediction, labels, signame,self.SIZE_LAST_20, window_size = size,
+                                                 annotation_type=type, classifier="RPeakDetection")
+
+
+    def get_labels(self, locations, window_size):
+        labels = []
+        interval = [q for q in range(int(-window_size/2), int(window_size/2) + 1)]
+        for loc in locations:
+            labels.append([loc + q for q in interval])
+        return labels
+
+    def get_predictions(self, signame, n_channel, window_size, total_size=SIG_LEN,
                         test_size=SIZE_LAST_20):
         record = wfdb.rdrecord('sample/' + signame)
         channel = []
-        window = 10
         for elem in record.p_signal:
             channel.append(elem[n_channel])
         prediction = []
@@ -38,12 +49,12 @@ class RPeakEvaluation:
         for line in file:
             value = int(line.replace("\n", ""))
             if value > total_size - test_size:
-                real_peak_index = self.get_r_peak(channel, value, window)
+                real_peak_index = self.get_r_peak(channel, value, window_size)
                 prediction.append(real_peak_index)
         return prediction
 
-    def get_r_peak(self, channel, value, window):
-        indexes = range(int(value-window/2), int(value+window/2+1))
+    def get_r_peak(self, channel, value, window_size):
+        indexes = range(int(value-window_size/2), int(value+window_size/2+1))
         max = abs(channel[value])
         rpeak = value
         for index in indexes:
@@ -52,30 +63,31 @@ class RPeakEvaluation:
                 rpeak = index
         return rpeak
 
-    def evaluate_prediction(self, prediction, locations, signame, channel_number, length):
+    def evaluate_prediction(self, prediction, labels, signame, length, window_size, annotation_type, classifier):
         TP = 0
         FP = 0
         FN = 0
 
-        i = 0
-        j = 0
-        while i < len(prediction) and j < len(locations):
-            qrs_region = [q for q in range(locations[j] - 5, locations[j] + 6)]
-            if prediction[i] in qrs_region:
+        for pred in prediction:
+            if pred in np.concatenate(labels):
                 TP += 1
-                i += 1
-                j += 1
-            elif prediction[i] > locations[j]:
-                FN += 1
-                j += 1
             else:
                 FP += 1
-                i += 1
 
-        FN += len(locations) - j
-        FP += len(prediction) - i
+        for interval in labels:
+            found = False
+            for value in interval:
+                if value in prediction:
+                    found = True
+            if not found:
+                FN += 1
 
         TN = length - TP - FP - FN
-        file = open("report_"+str(channel_number)+".tsv", "a")
+
+        DER = ((FP + FN) / TP)
+        SE = (TP / (TP + FN)) * 100
+        P = (TP / (TP + FP)) * 100
+        file = open("reports/" + classifier + "/" + annotation_type + "_" + str(window_size) + ".tsv", "a")
         file.write("%s\n" %(signame))
-        file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\n" % (str(TP), str(TN), str(FP), str(FN)))
+        file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\tDER:%s\tSE:%s\tP:%s\n" % (str(TP), str(TN), str(FP), str(FN), str(DER),
+                                                                          str(SE), str(P)))
