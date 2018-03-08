@@ -3,11 +3,14 @@ from scipy import signal
 import numpy as np
 import os
 
+
 class FeatureExtraction:
-    def extract_features(self, sample_name, annotation_type, window_size):
+    def extract_features(self, sample_name, annotation_type, window_size,
+                         features_type="fixed"):
         print("Extracting features for signal " + sample_name + "...")
         record = wfdb.rdrecord(sample_name)
-        annotation = wfdb.rdann('annotations/' + annotation_type + '/' + sample_name.replace("sample/", "") , 'atr')
+        annotation = wfdb.rdann('annotations/' + annotation_type + '/' +
+                                sample_name.replace("sample/", "") , 'atr')
         first_channel = []
         second_channel = []
         for elem in record.p_signal:
@@ -18,8 +21,32 @@ class FeatureExtraction:
         gradient_channel1 = self.normalized_gradient(filtered_first_channel)
         gradient_channel2 = self.normalized_gradient(filtered_second_channel)
         print("actual peaks:" + str(len(annotation.sample)))
+        if features_type == "sliding":
+            return self.compute_sliding_features(gradient_channel1, gradient_channel2,
+                                                 annotation, window_size)
+        return self.compute_features(gradient_channel1, gradient_channel2, annotation,
+                                     window_size)
 
-        return self.compute_features(gradient_channel1, gradient_channel2, annotation, window_size)
+    def compute_sliding_features(self, channel1, channel2, annotation, window_size):
+        features = []
+        labels = []
+        sample = annotation.sample
+        j = 0
+        while j < len(channel1) - window_size:
+            feature = []
+            qrs = False
+            for i in range(j, j +window_size):
+                feature.append(channel1[i])
+                feature.append(channel2[i])
+                if i in sample:
+                    qrs = True
+            features.append(feature)
+            if qrs:
+                labels.append(1)
+            else:
+                labels.append(-1)
+            j += 1
+        return np.asarray(features), np.asarray(labels)
 
     def compute_features(self, channel1, channel2, annotation, window_size):
         features = []
