@@ -90,6 +90,11 @@ For the first problem thw whole signal '100' is considered as training data, sam
 The training data of the multiclass problem is composed by the first 20.000 samples of each of the 48 record in the MIT-BIH database.
 The algorithm is actually divided in four main phases : Reading data, Signal Processing, Feature Extraction and Classification. 
 
+
+|\|TP|TN|FP|FN|DER|SE|
+|-|-|-|-|-|-|-|
+|100|456|129541|1|2|0.006578947368421052|99.56331877729258|
+
 ### Reading Data
 Data are available in the PhysioNet website, precisely at the link below:
 
