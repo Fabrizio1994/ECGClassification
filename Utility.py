@@ -7,6 +7,7 @@ from KNN import KNN
 from RPeakEvaluation import RPeakEvaluation
 
 SIG_LEN = 650000
+SIG_LEN_LAST_20 = int(SIG_LEN/5)
 
 rpe = RPeakEvaluation()
 knn = KNN()
@@ -105,4 +106,4 @@ class Utility:
                         cleaned_prediction = knn.clean_prediction(prediction)
                         locations = knn.get_index(cleaned_prediction)
                         labels = rpe.get_labels(annotation.sample, size)
-                        rpe.evaluate_prediction(locations, labels, name, SIG_LEN, size, type, classifier="KNN")
+                        rpe.evaluate_prediction(locations, labels, name, SIG_LEN_LAST_20, size, type, classifier="KNN")

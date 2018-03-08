@@ -64,7 +64,7 @@ class KNN:
 
     def get_index(self, cleaned_prediction):
         indexes = []
-        index = 1
+        index = 0
         for pred in cleaned_prediction:
             if pred == 1:
                 indexes.append(index)
