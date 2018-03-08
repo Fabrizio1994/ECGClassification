@@ -16,6 +16,7 @@ class RPeakEvaluation:
     def validate_r_peak(self):
         window_sizes = [10, 20, 50]
         annotation_type = ['beat', 'cleaned']
+
         for name in os.listdir("sample"):
             if name.endswith('.atr'):
                 signame = name.replace(".atr", "")
@@ -87,7 +88,11 @@ class RPeakEvaluation:
         DER = ((FP + FN) / TP)
         SE = (TP / (TP + FN)) * 100
         P = (TP / (TP + FP)) * 100
+
         file = open("reports/" + classifier + "/" + annotation_type + "_" + str(window_size) + ".tsv", "a")
-        file.write("%s\n" %(signame))
-        file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\tDER:%s\tSE:%s\tP:%s\n" % (str(TP), str(TN), str(FP), str(FN), str(DER),
-                                                                          str(SE), str(P)))
+        file.write("|SIGNAL|TP|TN|FP|FN|DER|SE|\n")
+        file.write("|-|-|-|-|-|-|-|\n")
+        file.write("|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(TP), str(TN), str(FP), str(FN), str(DER), str(SE)))
+        #file.write("%s\n" %(signame))
+        #file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\tDER:%s\tSE:%s\tP:%s\n" % (str(TP), str(TN), str(FP), str(FN), str(DER),
+                                                                          #str(SE), str(P)))

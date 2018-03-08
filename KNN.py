@@ -20,6 +20,8 @@ class KNN:
         delta = 0
         inside = False
         for pred in prediction:
+            print('cleaning pred: ' + str(pred))
+
             if pred == -1:
                 if inside:
                     delta = 0
@@ -62,8 +64,10 @@ class KNN:
 
     def get_index(self, cleaned_prediction):
         indexes = []
+        index = 1
         for pred in cleaned_prediction:
-            for j in range(len(cleaned_prediction)):
-                if pred == 1:
-                    indexes.append(j)
+            if pred == 1:
+                indexes.append(index)
+            index += 1
+        print(len(indexes))
         return indexes
