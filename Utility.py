@@ -104,7 +104,5 @@ class Utility:
                         prediction = gs.grid_search(train_features, train_labels)
                         cleaned_prediction = knn.clean_prediction(prediction)
                         locations = knn.get_index(cleaned_prediction)
-                        print(locations)
-                        exit()
                         labels = rpe.get_labels(annotation.sample, size)
                         rpe.evaluate_prediction(locations, labels, name, SIG_LEN, size, type, classifier="KNN")
