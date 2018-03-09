@@ -21,7 +21,6 @@ class KNN:
         inside = False
         for pred in prediction:
             print('cleaning pred: ' + str(pred))
-
             if pred == -1:
                 if inside:
                     delta = 0
@@ -36,8 +35,6 @@ class KNN:
                     result.append(-1)
                     delta += 1
         return result
-
-
 
     def evaluate_results(self, predict, Ytest):
         TP = 0
@@ -59,8 +56,6 @@ class KNN:
             j += 1
         file = open("report_grad.tsv", "a")
         file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\n" % (str(TP), str(TN), str(FP), str(FN)))
-
-
 
     def get_index(self, cleaned_prediction):
         indexes = []
