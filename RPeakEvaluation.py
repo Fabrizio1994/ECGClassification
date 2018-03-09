@@ -28,9 +28,8 @@ class RPeakEvaluation:
                     for size in window_sizes:
                         prediction = self.get_predictions(signame, 0, window_size=size)
                         labels = self.get_labels(locations, size)
-                        self.evaluate_prediction(prediction, labels, signame,self.SIZE_LAST_20, window_size = size,
+                        self.evaluate_prediction(prediction, labels, signame,self.SIZE_LAST_20, locations, window_size = size,
                                                  annotation_type=type, classifier="RPeakDetection")
-
 
     def get_labels(self, locations, window_size):
         labels = []
@@ -64,14 +63,16 @@ class RPeakEvaluation:
                 rpeak = index
         return rpeak
 
-    def evaluate_prediction(self, prediction, labels, signame, length, window_size, annotation_type, classifier):
+    def evaluate_prediction(self, prediction, labels, signame, length, locations,
+                            window_size, annotation_type, classifier):
         TP = 0
         FP = 0
         FN = 0
-
+        correct_preds = []
         for pred in prediction:
             if pred in np.concatenate(labels):
                 TP += 1
+                correct_preds.append(pred)
             else:
                 FP += 1
 
@@ -88,11 +89,28 @@ class RPeakEvaluation:
         DER = ((FP + FN) / TP)
         SE = (TP / (TP + FN)) * 100
         P = (TP / (TP + FP)) * 100
-
         file = open("reports/" + classifier + "/" + annotation_type + "_" + str(window_size) + ".tsv", "a")
-        file.write("|SIGNAL|TP|TN|FP|FN|DER|SE|\n")
-        file.write("|-|-|-|-|-|-|-|\n")
-        file.write("|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(TP), str(TN), str(FP), str(FN), str(DER), str(SE)))
+        if classifier == "KNN":
+            file.write("|SIGNAL|TP|TN|FP|FN|DER|SE|\n")
+            file.write("|-|-|-|-|-|-|-|\n")
+            file.write("|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(TP), str(TN),
+                                                     str(FP), str(FN), str(DER),
+                                                     str(SE)))
+        else:
+            DIFF = self.compute_average_diff(correct_preds, locations)
+            file.write("|SIGNAL|TP|TN|FP|FN|DER|SE|DIFF\n")
+            file.write("|-|-|-|-|-|-|-|-|\n")
+            file.write("|%s|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(TP), str(TN),
+                                                     str(FP), str(FN), str(DER),
+                                                     str(SE)), str(DIFF))
         #file.write("%s\n" %(signame))
         #file.write("TP:%s\tTN:%s\tFP:%s\tFN:%s\tDER:%s\tSE:%s\tP:%s\n" % (str(TP), str(TN), str(FP), str(FN), str(DER),
                                                                           #str(SE), str(P)))
+
+    def compute_average_diff(self, correct_preds, locations):
+        count = 0
+        for pred in correct_preds:
+            count +=1
+            diff = min([abs(pred - loc) for loc in locations])
+            sum += diff
+        return sum/count
