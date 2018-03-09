@@ -4,7 +4,7 @@ The function of human body is frequently associated with signals of electrical, 
 
 ## Dependencies
 The modules are implemented for use with Python 3.x and they consist of the following dependencies:
-* scipy
+* scip
 * numpy
 * matplotlib
 ```
@@ -28,6 +28,11 @@ pip install wfdb
 
 ## MIT-BIH Arrhythmia Database
 The MIT-BIH Arrhytmia DB contains 48 half-hour excerpts of two-channel ambulatory ECG recordings, obtained from 47 subjects (records 201 and 202 are from the same subject) studied by the BIH Arrhythmia Laboratory between 1975 and 1979. Of these, 23 were chosen at random from a collection of over 4000 Holter tapes, and the other 25 (the "200 series") were selected to include examples of uncommon but clinically important arrhythmias that would not be well represented in a small random sample. Approximately 60% of the subjects were inpatients. The recordings were digitized at 360 samples per second per channel with 11-bit resolution over a 10 mV range. The digitization rate was chosen to accommodate the use of simple digital notch filters to remove 60 Hz (mains frequency) interference. Six of the 48 records contain a total of 33 beats that remain unclassified, because the cardiologist-annotators were unable to reach agreement on the beat types. The annotators were instructed to use all evidence available from both signals to identify every detectable QRS complex. The database contains seven episodes of loss of signal or noise so severe in both channels simultaneously that QRS complexes cannot be detected; these episodes are all quite short and have a total duration of 10s. In all of the remaining data, every QRS complex was annotated, about 109.000 in all. 
+
+### QRS Region
+The QRS complex is the central part of an ECG. It corresponds to the depolarization of the right and left ventricles of the human heart. A Q wave is any downward deflection after the P wave. An R wave follows as an upward deflection, and the S wave is any downward deflection after the R wave. Since each annotation we got from the MIT-BIH Database is not precisely associated to an R-Peak but to a whole QRS complex, we had to consider a window of fixed size (±5, ±10, ±25) with the R-peak as center point, considering as good annotations those ones that will lay inside the window. An example of a PQRST segment can be seen in the picture below. 
+
+![QRS complex](https://preview.ibb.co/htTGsn/PQRST.png)
 
 For further descriptions, please see the references. 
 
@@ -86,7 +91,8 @@ Every signal is annotated by cardiologists with the locations of the QRS complex
 In this scope, the QRS detection problem is encountered as a binary classification problem:
 each sample point of a given signal is considered as a feature that can be classified either as a QRS complex or not.  
 The before mentioned QRS multiclass classification aims to label each sample point with one of the symbols listed in the Annotations section. 
-For the first problem thw whole signal '100' is considered as training data, sampled in 650.000 points.
+
+Each signal is considered for 80% of its length as training data and the rest as test data.
 The training data of the multiclass problem is composed by the first 20.000 samples of each of the 48 record in the MIT-BIH database.
 The algorithm is actually divided in four main phases : Reading data, Signal Processing, Feature Extraction and Classification. 
 
@@ -108,8 +114,7 @@ wfdb.rdrecord(path_to_sample, samp_from, samp_to)
 where path_to_sample is the local path where the records are stored, and samp_from and samp_to define the portion of signal, contained in a range of frequencies, considered for processing.
 Each record in the database comprehends two raw signals, coming from the two channels of ECG recording. 
 ### Signal Processing
-Signals are processed by using an high pass filter, in order to reduce the recording noise that would lead to uncorrect classifications.  
-Furthermore, the original signal peaks result sharpened in the output signal, expecting a greater detection accuracy.
+Signals are processed by using a band pass filter, in order to reduce the recording noise that would lead to uncorrect classifications.  
 The high pass filter chosen is the one suggested in "QRS detection using KNN" paper, defined by the following transfer function:  
 ![equation](http://latex.codecogs.com/gif.latex?H(z)&space;=&space;\frac{-1&plus;32z^{-16}&plus;z^{-32}}{1&plus;z^{-1}})  
 This step is implemented by means of the lfilter function of scipy package:  
@@ -117,6 +122,7 @@ This step is implemented by means of the lfilter function of scipy package:
 output_record = signal.lfilter(num_coefficents, den_coefficients, input_record)
 ```
 where num_coefficients and den_coefficients are the lists of exponent values of the transfer function of the numerator and the denominator respectively.  
+
 
 ![Non-Filtered Signal](https://image.ibb.co/gCiVgS/prefiltered100.png)
 ![Filtered Signal](https://image.ibb.co/f4pQFn/filtered100.png)
@@ -134,14 +140,14 @@ As a preprocessing phase of our procedure, we split the whole dataset into train
 For our purposes of classification we trained a KNN classifier by means of a 5-fold Cross Validated Grid Search in the following space of parameters : 
 ```
 parameters = {  
-'n_neighbors': [1, 3, 5, 7, 9],  
+'n_neighbors': [1, 3, 5, 7, 9, 11],  
 'weights': ['uniform', 'distance'],  
 'p': [1,2]  
 }
 ```
 According to accuracy score metric, the best parameters are: 
 ```
-n_neighbors = 9  
+n_neighbors = 11  
 weights = uniform  
 p = 2
 ```
