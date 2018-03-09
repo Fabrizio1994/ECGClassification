@@ -109,6 +109,7 @@ class RPeakEvaluation:
 
     def compute_average_diff(self, correct_preds, locations):
         count = 0
+        sum = 0
         for pred in correct_preds:
             count +=1
             diff = min([abs(pred - loc) for loc in locations])
