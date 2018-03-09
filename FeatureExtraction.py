@@ -10,7 +10,7 @@ class FeatureExtraction:
         print("Extracting features for signal " + sample_name + "...")
         record = wfdb.rdrecord(sample_name)
         annotation = wfdb.rdann('annotations/' + annotation_type + '/' +
-                                sample_name.replace("sample/", "") , 'atr')
+                                sample_name.replace("sample/", ""), 'atr')
         first_channel = []
         second_channel = []
         for elem in record.p_signal:
@@ -22,10 +22,14 @@ class FeatureExtraction:
         gradient_channel2 = self.normalized_gradient(filtered_second_channel)
         print("actual peaks:" + str(len(annotation.sample)))
         if features_type == "sliding":
-            return self.compute_sliding_features(gradient_channel1, gradient_channel2,
-                                                 annotation, window_size)
-        return self.compute_features(gradient_channel1, gradient_channel2, annotation,
-                                     window_size)
+            self.compute_sliding_features(gradient_channel1, gradient_channel2,
+                                          annotation, window_size)
+        elif features_type == 'on_annotation':
+            return self.compute_on_annotation_features(gradient_channel1,
+                                                       gradient_channel2,
+                                                       annotation)
+        return self.compute_fixed_features(gradient_channel1, gradient_channel2,
+                                           annotation, window_size)
 
     def compute_sliding_features(self, channel1, channel2, annotation, window_size):
         features = []
@@ -35,7 +39,7 @@ class FeatureExtraction:
         while j < len(channel1) - window_size:
             feature = []
             qrs = False
-            for i in range(j, j +window_size):
+            for i in range(j, j + window_size):
                 feature.append(channel1[i])
                 feature.append(channel2[i])
                 if i in sample:
@@ -48,25 +52,38 @@ class FeatureExtraction:
             j += 1
         return np.asarray(features), np.asarray(labels)
 
-    def compute_features(self, channel1, channel2, annotation, window_size):
+    def compute_fixed_features(self, channel1, channel2, annotation, window_size):
         features = []
         for i in range(len(channel1)):
             features.append([channel1[i], channel2[i]])
         samples = annotation.sample
-        labels = [-1]*len(channel1)
+        labels = [-1] * len(channel1)
         for j in range(len(samples)):
-            qrs_region = self.get_qrs_region(samples, j, window_size)
+            siglen = len(channel1)
+            annotated = sample[j]
+            qrs_region = self.get_qrs_region(samples, annotated, window_size, siglen)
             for sample in qrs_region:
                 labels[sample] = 1
         return np.asarray(features), np.asarray(labels)
 
-    def get_qrs_region(self, samples, location, window_size):
-        if location < len(samples) - (int(window_size/2) + 1):
-            return [q for q in range(samples[location] - (int(window_size/2)), samples[location] +
-                                     int(window_size/2)+1)]
+    def compute_on_annotation_features(self, channel1, channel2, annotation):
+        features = []
+        for i in range(len(channel1)):
+            features.append([channel1[i], channel2[i]])
+        samples = annotation.sample
+        labels = [-1] * len(channel1)
+        for j in range(len(samples)):
+            labels[samples[j]] = -1
+        return np.asarray(features), np.asarray(labels)
+
+    def get_qrs_region(self, samples, annotated, window_size, siglen):
+        if annotated < siglen - (int(window_size / 2) + 1):
+            return [q for q in range(samples[annotated] - (int(window_size / 2)),
+                                     samples[annotated] + int(window_size / 2) + 1)]
+
         else:
-            gap = len(samples) - location - 1
-            return [q for q in range(samples[location] - gap, samples[location]+gap)]
+            gap = siglen - annotated - 1
+            return [q for q in range(samples[annotated] - gap, samples[annotated] + gap)]
 
     def normalized_gradient(self, channel):
         gradient = np.diff(channel)
@@ -81,20 +98,19 @@ class FeatureExtraction:
         return record
 
     def passband_filter(self, channel):
-        freq = 360.0/2.0
-        b, a = signal.butter(1, [5/freq, 12/freq], btype="band")
+        freq = 360.0 / 2.0
+        b, a = signal.butter(1, [5 / freq, 12 / freq], btype="band")
         new_channel = signal.filtfilt(b, a, channel)
         return new_channel
 
-    def extract_from_all(self,split_size):
+    def extract_from_all(self, split_size):
         features = []
         labels = []
         for signal_name in os.listdir("sample"):
             if signal_name.endswith(".dat"):
-                name = signal_name.replace(".dat","")
-                feature, label = self.extract_features('sample/'+name, split_size=split_size)
+                name = signal_name.replace(".dat", "")
+                feature, label = self.extract_features('sample/' + name, split_size=split_size)
                 for feat in feature:
                     features.append(feat)
                 labels.extend(label)
         return np.asarray(features), np.asarray(labels)
-
