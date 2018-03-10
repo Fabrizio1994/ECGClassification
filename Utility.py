@@ -4,12 +4,12 @@ import os
 from GridSearch import GridSearch
 from FeatureExtraction import FeatureExtraction
 from KNN import KNN
-from RPeakEvaluation import RPeakEvaluation
+from Evaluation import Evaluation
 
 SIG_LEN = 650000
 SIG_LEN_LAST_20 = int(SIG_LEN/5)
 
-rpe = RPeakEvaluation()
+eval = Evaluation()
 knn = KNN()
 fe = FeatureExtraction()
 gs = GridSearch()
@@ -80,6 +80,13 @@ class Utility:
                 wfdb.wrann(name, "atr", np.asarray(new_sample), np.asarray(new_symbol))
                 os.system("mv " + signal_name + " annotations/beat")
 
+    #returns an updated record object (useful for plotting)
+    def overwrite_signal(self, first_channel, second_channel, record):
+        for i in range(len(record.p_signal)):
+            record.p_signal[i][0] = first_channel[i]
+            record.p_signal[i][1] = second_channel[i]
+        return record
+
     def write_csv_signal(self, signal_name):
         file = open("csv/" + signal_name + ".csv", "w")
         record = wfdb.rdrecord("sample/" + signal_name)
@@ -103,7 +110,6 @@ class Utility:
                     for size in self.WINDOW_SIZES:
                         train_features, train_labels = fe.extract_features("sample/" + signal_name, type, size)
                         prediction = gs.grid_search(train_features, train_labels)
-                        cleaned_prediction = knn.clean_prediction(prediction)
-                        locations = knn.get_index(cleaned_prediction)
-                        labels = rpe.get_labels(annotation.sample, size)
-                        rpe.evaluate_prediction(locations, labels, name, SIG_LEN_LAST_20, size, type, classifier="KNN")
+                        locations = knn.clean_prediction(prediction)
+                        labels = eval.get_labels(annotation.sample, size)
+                        eval.evaluate_prediction(locations, labels, name, SIG_LEN_LAST_20, size, type, classifier="KNN")

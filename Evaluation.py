@@ -8,7 +8,7 @@ fe = FeatureExtraction()
 knn = KNN()
 
 
-class RPeakEvaluation:
+class Evaluation:
 
     SIZE_LAST_20 = 130000
     SIG_LEN = 650000
