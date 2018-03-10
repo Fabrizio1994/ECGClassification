@@ -1,7 +1,6 @@
 import wfdb
 from scipy import signal
 import numpy as np
-import os
 
 
 class FeatureExtraction:
@@ -21,36 +20,12 @@ class FeatureExtraction:
         gradient_channel1 = self.normalized_gradient(filtered_first_channel)
         gradient_channel2 = self.normalized_gradient(filtered_second_channel)
         print("actual peaks:" + str(len(annotation.sample)))
-        if features_type == "sliding":
-            self.compute_sliding_features(gradient_channel1, gradient_channel2,
-                                          annotation, window_size)
-        elif features_type == 'on_annotation':
+        if features_type == 'on_annotation':
             return self.compute_on_annotation_features(gradient_channel1,
                                                        gradient_channel2,
                                                        annotation)
         return self.compute_fixed_features(gradient_channel1, gradient_channel2,
                                            annotation, window_size)
-
-    def compute_sliding_features(self, channel1, channel2, annotation, window_size):
-        features = []
-        labels = []
-        sample = annotation.sample
-        j = 0
-        while j < len(channel1) - window_size:
-            feature = []
-            qrs = False
-            for i in range(j, j + window_size):
-                feature.append(channel1[i])
-                feature.append(channel2[i])
-                if i in sample:
-                    qrs = True
-            features.append(feature)
-            if qrs:
-                labels.append(1)
-            else:
-                labels.append(-1)
-            j += 1
-        return np.asarray(features), np.asarray(labels)
 
     def compute_fixed_features(self, channel1, channel2, annotation, window_size):
         features = []
@@ -91,11 +66,6 @@ class FeatureExtraction:
         normalized_gradient = np.divide(gradient, gradient_norm)
         return normalized_gradient
 
-    def overwrite_signal(self, first_channel, second_channel, record):
-        for i in range(len(record.p_signal)):
-            record.p_signal[i][0] = first_channel[i]
-            record.p_signal[i][1] = second_channel[i]
-        return record
 
     def passband_filter(self, channel):
         freq = 360.0 / 2.0
@@ -103,14 +73,4 @@ class FeatureExtraction:
         new_channel = signal.filtfilt(b, a, channel)
         return new_channel
 
-    def extract_from_all(self, split_size):
-        features = []
-        labels = []
-        for signal_name in os.listdir("sample"):
-            if signal_name.endswith(".dat"):
-                name = signal_name.replace(".dat", "")
-                feature, label = self.extract_features('sample/' + name, split_size=split_size)
-                for feat in feature:
-                    features.append(feat)
-                labels.extend(label)
-        return np.asarray(features), np.asarray(labels)
+
