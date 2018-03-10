@@ -15,12 +15,11 @@ class KNN:
 
 
     def clean_prediction(self, prediction):
-        average_beat = 300
+        average_beat = 250
         cleaned_predictions = []
         delta = 0
         inside = False
         for pred in prediction:
-            print('cleaning pred: ' + str(pred))
             if pred == -1:
                 if inside:
                     delta = 0

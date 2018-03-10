@@ -63,8 +63,8 @@ class Evaluation:
                 rpeak = index
         return rpeak
 
-    def evaluate_prediction(self, prediction, labels, signame, length, locations,
-                            window_size, annotation_type, classifier):
+    def evaluate_prediction(self, prediction, labels, signame, length, ann_locations,
+                            window_size, annotation_type, features_type, classifier):
         TP = 0
         FP = 0
         FN = 0
@@ -85,11 +85,14 @@ class Evaluation:
                 FN += 1
 
         TN = length - TP - FP - FN
-
-        DER = ((FP + FN) / TP)
+        if TP!=0:
+            DER = ((FP + FN) / TP)
+        else:
+            DER = 1
         SE = (TP / (TP + FN)) * 100
         P = (TP / (TP + FP)) * 100
-        file = open("reports/" + classifier + "/" + annotation_type + "_" + str(window_size) + ".tsv", "a")
+        file = open("reports/" + classifier + "/" + annotation_type + "_"
+                    + str(window_size) +"_"+features_type+ ".tsv", "a")
         if classifier == "KNN":
             file.write("|SIGNAL|TP|TN|FP|FN|DER|SE|\n")
             file.write("|-|-|-|-|-|-|-|\n")
@@ -97,7 +100,7 @@ class Evaluation:
                                                      str(FP), str(FN), str(DER),
                                                      str(SE)))
         else:
-            DIFF = self.compute_average_diff(correct_preds, locations)
+            DIFF = self.compute_average_diff(correct_preds, ann_locations)
             file.write("|SIGNAL|TP|TN|FP|FN|DER|SE|DIFF\n")
             file.write("|-|-|-|-|-|-|-|-|\n")
             file.write("|%s|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(TP), str(TN),

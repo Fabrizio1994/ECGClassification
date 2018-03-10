@@ -21,6 +21,7 @@ class Utility:
     CLEANING_WINDOW = 10
     WINDOW_SIZES = [10, 20, 50]
     ANNOTATION_TYPES = ['beat', 'cleaned']
+    FEATURE_TYPES = ['fixed', 'on_annotation']
 
     def clean_signal(self, sample_name):
         print(sample_name)
@@ -105,11 +106,17 @@ class Utility:
         for name in os.listdir("sample"):
             if name.endswith('.atr'):
                 signal_name = name.replace(".atr", "")
-                for type in self.ANNOTATION_TYPES:
-                    annotation = wfdb.rdann('annotations/' + type + '/' + signal_name, 'atr')
+                for ann_type in self.ANNOTATION_TYPES:
+                    annotation = wfdb.rdann('annotations/' + ann_type + '/' + signal_name, 'atr')
                     for size in self.WINDOW_SIZES:
-                        train_features, train_labels = fe.extract_features("sample/" + signal_name, type, size)
-                        prediction = gs.grid_search(train_features, train_labels)
-                        locations = knn.clean_prediction(prediction)
-                        labels = eval.get_labels(annotation.sample, size)
-                        eval.evaluate_prediction(locations, labels, name, SIG_LEN_LAST_20, size, type, classifier="KNN")
+                        for feat_type in self.FEATURE_TYPES:
+                            train_features, train_labels = fe.extract_features("sample/" + signal_name, ann_type, size,
+                                                                               features_type=feat_type)
+                            knn_output = gs.grid_search(train_features, train_labels)
+                            prediction = knn.clean_prediction(knn_output)
+                            labels = eval.get_labels(annotation.sample, size)
+                            ann_locations = annotation.sample
+                            eval.evaluate_prediction(prediction, labels, name,
+                                                     SIG_LEN_LAST_20,
+                                                     ann_locations, size, ann_type,
+                                                     feat_type, classifier="KNN")
