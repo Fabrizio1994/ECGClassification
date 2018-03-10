@@ -35,8 +35,8 @@ class FeatureExtraction:
         labels = [-1] * len(channel1)
         for j in range(len(samples)):
             siglen = len(channel1)
-            annotated = sample[j]
-            qrs_region = self.get_qrs_region(samples, annotated, window_size, siglen)
+            annotated_index = j
+            qrs_region = self.get_qrs_region(samples, annotated_index, window_size, siglen)
             for sample in qrs_region:
                 labels[sample] = 1
         return np.asarray(features), np.asarray(labels)
@@ -51,14 +51,15 @@ class FeatureExtraction:
             labels[samples[j]] = -1
         return np.asarray(features), np.asarray(labels)
 
-    def get_qrs_region(self, samples, annotated, window_size, siglen):
-        if annotated < siglen - (int(window_size / 2) + 1):
-            return [q for q in range(samples[annotated] - (int(window_size / 2)),
-                                     samples[annotated] + int(window_size / 2) + 1)]
+    def get_qrs_region(self, samples, annotated_index, window_size, siglen):
+        if annotated_index < siglen - (int(window_size / 2) + 1):
+            return [q for q in range(samples[annotated_index] - (int(window_size / 2)),
+                                     samples[annotated_index] + int(window_size / 2) + 1)]
 
         else:
-            gap = siglen - annotated - 1
-            return [q for q in range(samples[annotated] - gap, samples[annotated] + gap)]
+            gap = siglen - annotated_index - 1
+            return [q for q in range(samples[annotated_index] - gap,
+                                     samples[annotated_index] + gap)]
 
     def normalized_gradient(self, channel):
         gradient = np.diff(channel)
