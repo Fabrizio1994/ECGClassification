@@ -108,15 +108,17 @@ class Utility:
                 signal_name = name.replace(".atr", "")
                 for ann_type in self.ANNOTATION_TYPES:
                     annotation = wfdb.rdann('annotations/' + ann_type + '/' + signal_name, 'atr')
+                    locations = list(filter(lambda x: x > (SIG_LEN - SIG_LEN_LAST_20), annotation.sample))
                     for size in self.WINDOW_SIZES:
                         for feat_type in self.FEATURE_TYPES:
                             train_features, train_labels = fe.extract_features("sample/" + signal_name, ann_type, size,
                                                                                features_type=feat_type)
                             knn_output = gs.grid_search(train_features, train_labels)
                             prediction = knn.clean_prediction(knn_output)
-                            labels = eval.get_labels(annotation.sample, size)
-                            ann_locations = annotation.sample
+                            labels = train_labels[520000:]
+                            labels = knn.get_index(labels)
                             eval.evaluate_prediction(prediction, labels, name,
                                                      SIG_LEN_LAST_20,
-                                                     ann_locations, size, ann_type,
+                                                     locations, size, ann_type,
                                                      feat_type, classifier="KNN")
+
