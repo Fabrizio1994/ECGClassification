@@ -20,7 +20,7 @@ class Utility:
         , '"', '@']
     CLEANING_WINDOW = 10
     WINDOW_SIZES = [10, 20, 50]
-    ANNOTATION_TYPES = ['beat', 'cleaned']
+    ANNOTATION_TYPES = ['beat']
     FEATURE_TYPES = ['fixed', 'on_annotation']
 
     def clean_signal(self, sample_name):

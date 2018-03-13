@@ -78,7 +78,10 @@ class Evaluation:
             DER = ((FP + FN) / TP)
         else:
             DER = np.infty
-        SE = (TP / (TP + FN)) * 100
+        if TP + FN != 0:
+            SE = (TP / (TP + FN)) * 100
+        else :
+            SE = 0
         file = open("reports/" + classifier + "/" + annotation_type + "_"
                     + str(window_size) + "_" + features_type + ".tsv", "a")
         if classifier == "KNN":
