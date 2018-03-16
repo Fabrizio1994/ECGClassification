@@ -1,27 +1,13 @@
 import wfdb
 import numpy as np
 import os
-from GridSearch import GridSearch
-from FeatureExtraction import FeatureExtraction
-from KNN import KNN
-from Evaluation import Evaluation
 
-SIG_LEN = 650000
-SIG_LEN_LAST_20 = int(SIG_LEN/5)
 
-eval = Evaluation()
-knn = KNN()
-fe = FeatureExtraction()
-gs = GridSearch()
-
-class Utility:
+class SignalCleaning:
 
     NON_BEAT_ANN = [ '[', '!', ']', 'x', '(', ')', 'p', 't', 'u', '`', '\'', '^', '|', '~', '+', 's', 'T', '*', 'D', '='
         , '"', '@']
     CLEANING_WINDOW = 10
-    WINDOW_SIZES = [10, 20, 50]
-    ANNOTATION_TYPES = ['beat']
-    FEATURE_TYPES = ['fixed', 'on_annotation']
 
     def clean_signal(self, sample_name):
         print(sample_name)
@@ -88,37 +74,5 @@ class Utility:
             record.p_signal[i][1] = second_channel[i]
         return record
 
-    def write_csv_signal(self, signal_name):
-        file = open("csv/" + signal_name + ".csv", "w")
-        record = wfdb.rdrecord("sample/" + signal_name)
-        for elem in record.p_signal:
-            file.write("%s\n" % (str(elem[0])))
-        file.close()
 
-    def get_command(self, file_name):
-        return "python2 RPeakDetection.py 360  < csv/" + file_name+ " > rpeak_output/" + file_name
-
-    def run_rpeak(self):
-        for file_name in os.listdir("csv"):
-            os.system(self.get_command(file_name))
-
-    def run_knn(self):
-        for name in os.listdir("sample"):
-            if name.endswith('.atr'):
-                signal_name = name.replace(".atr", "")
-                for ann_type in self.ANNOTATION_TYPES:
-                    annotation = wfdb.rdann('annotations/' + ann_type + '/' + signal_name, 'atr')
-                    locations = list(filter(lambda x: x > (SIG_LEN - SIG_LEN_LAST_20), annotation.sample))
-                    for size in self.WINDOW_SIZES:
-                        for feat_type in self.FEATURE_TYPES:
-                            train_features, train_labels = fe.extract_features("sample/" + signal_name, ann_type, size,
-                                                                               features_type=feat_type)
-                            knn_output = gs.grid_search(train_features, train_labels)
-                            prediction = knn.clean_prediction(knn_output)
-                            labels = train_labels[520000:]
-                            labels = knn.get_index(labels)
-                            eval.evaluate_prediction(prediction, labels, name,
-                                                     SIG_LEN_LAST_20,
-                                                     locations, size, ann_type,
-                                                     feat_type, classifier="KNN")
 

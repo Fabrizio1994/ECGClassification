@@ -25,6 +25,23 @@ import numpy as np
 import scipy.signal
 import scipy.ndimage
 import time
+import os
+import wfdb
+
+class RPeakDetection:
+    def get_command(self, file_name):
+        return "python2 RPeakDetection.py 360  < csv/" + file_name+ " > rpeak_output/" + file_name
+
+    def run_rpeak(self):
+        for file_name in os.listdir("csv"):
+            os.system(self.get_command(file_name))
+
+    def prepare_input_files(self, signal_name):
+        file = open("csv/" + signal_name + ".csv", "w")
+        record = wfdb.rdrecord("sample/" + signal_name)
+        for elem in record.p_signal:
+            file.write("%s\n" % (str(elem[0])))
+        file.close()
 
 def detect_beats(
         ecg,  # The raw ECG signal
@@ -94,6 +111,7 @@ def detect_beats(
     zero_crossings = np.flatnonzero(zero_crossings)
     zero_crossings -= 1
     return zero_crossings
+
 
 if __name__ == '__main__':
     rate = float(sys.argv[1])

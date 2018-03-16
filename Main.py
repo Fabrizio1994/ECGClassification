@@ -1,3 +1,4 @@
-from Utility import Utility
-ut = Utility()
-ut.run_knn()
+from KNN import KNN
+
+knn = KNN()
+knn.run_knn()
