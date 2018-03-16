@@ -2,41 +2,47 @@
 ## Introduction
 The function of human body is frequently associated with signals of electrical, chemical, or acoustic origin. Extracting useful information from these biomedical signals has been found very helpful in explaining and identifying various pathological conditions. The most important are the signals which are originated from the heart's electrical activity. This electrical activity of the human heart, though it is quite low in amplitude (about 1 mV) can be detected on the body surface and recorded as an electrocardiogram (ECG) signal. The ECG arise because active tissues within the heart generate electrical currents, which flow most intensively within the heart muscle itself, and with lesser intensity throughout the body. The flow of current creates voltages between the sites on the body surface where the electrodes are placed. The normal ECG signal consists of P, QRS and T waves. The QRS interval is a measure of the total duration of ventricular tissue depolarization. QRS detection provides the fundamental reference for almost all automated ECG analysis algorithms. Before to perform QRS detection, removal or suppresion of noise is required. The aim of this work is to explore the merits of KNN algorithm as an ECG delineator. The KNN method is an instance based learning method that stores all available data points and classifies new data points based on similarity measure. In KNN, the each training data consists of a set of vectors and every vector has its own positive or negative class label, where K represents the number of neighbors. 
 
-## Dependencies
+### Dependencies
 The modules are implemented for use with Python 3.x and they consist of the following dependencies:
-* scip
+* scipy
 * numpy
 * matplotlib
 ```
 pip install wfdb
 ```
 
-## Repository directory structure 
+### Repository directory structure 
 ```
 ├── Main.py
+|
+├── Evaluation.py
+|
+├── KNN.py
+|
+├── RPeakDetection.py
+|
+├── Utility.py
 |
 ├── FeatureExtraction.py
 |
 ├── GridSearch.py
 |
-├── MultiClassClassification.py
-|
-├── TwoClassClassification.py
+├── License.md
 |
 └── README.md
 ```
 
-## MIT-BIH Arrhythmia Database
+# MIT-BIH Arrhythmia Database
 The MIT-BIH Arrhytmia DB contains 48 half-hour excerpts of two-channel ambulatory ECG recordings, obtained from 47 subjects (records 201 and 202 are from the same subject) studied by the BIH Arrhythmia Laboratory between 1975 and 1979. Of these, 23 were chosen at random from a collection of over 4000 Holter tapes, and the other 25 (the "200 series") were selected to include examples of uncommon but clinically important arrhythmias that would not be well represented in a small random sample. Approximately 60% of the subjects were inpatients. The recordings were digitized at 360 samples per second per channel with 11-bit resolution over a 10 mV range. The digitization rate was chosen to accommodate the use of simple digital notch filters to remove 60 Hz (mains frequency) interference. Six of the 48 records contain a total of 33 beats that remain unclassified, because the cardiologist-annotators were unable to reach agreement on the beat types. The annotators were instructed to use all evidence available from both signals to identify every detectable QRS complex. The database contains seven episodes of loss of signal or noise so severe in both channels simultaneously that QRS complexes cannot be detected; these episodes are all quite short and have a total duration of 10s. In all of the remaining data, every QRS complex was annotated, about 109.000 in all. 
 
-### QRS Region
+## QRS Region
 The QRS complex is the central part of an ECG. It corresponds to the depolarization of the right and left ventricles of the human heart. A Q wave is any downward deflection after the P wave. An R wave follows as an upward deflection, and the S wave is any downward deflection after the R wave. Since each annotation we got from the MIT-BIH Database is not precisely associated to an R-Peak but to a whole QRS complex, we had to consider a window of fixed size (±5, ±10, ±25) with the R-peak as center point, considering as good annotations those ones that will lay inside the window. An example of a PQRST segment can be seen in the picture below. 
 
 ![QRS complex](https://preview.ibb.co/htTGsn/PQRST.png)
 
 For further descriptions, please see the references. 
 
-### Annotations 
+## Annotations 
 |    Beat Annotation     |            Meaning             |
 | ------------- | -------------------------------|
 |N|Normal Beat|
@@ -85,16 +91,15 @@ For further descriptions, please see the references.
 |@|Link to external data|
 
 
-## The Algorithm 
-The aim of this work is to provide two efficient solutions for the problems of QRS detection and multiclass classification. 
-Every signal is annotated by cardiologists with the locations of the QRS complexes, and labeled with a symbols from the list above.  
-In this scope, the QRS detection problem is encountered as a binary classification problem:
-each sample point of a given signal is considered as a feature that can be classified either as a QRS complex or not.  
-The before mentioned QRS multiclass classification aims to label each sample point with one of the symbols listed in the Annotations section. 
-
+# The Algorithms
+The aim of this work is to provide two efficient solutions for the problems of QRS detection and, more precisely, R-Peak detection. 
+In order to do this, we used two different algorithms: one based on the KNN classifier and the other based on a heuristic method.
+Every signal is annotated by cardiologists with the locations of the QRS complexes, and labeled with a symbol from the list above. In this scope, the QRS detection problem is encountered as a binary classification problem:
+each sample point of a given signal is considered as a feature that can be classified either as a QRS complex or not.
 Each signal is considered for 80% of its length as training data and the rest as test data.
-The training data of the multiclass problem is composed by the first 20.000 samples of each of the 48 record in the MIT-BIH database.
-The algorithm is actually divided in four main phases : Reading data, Signal Processing, Feature Extraction and Classification. 
+Both algorithms are actually divided in four main phases: Data loading, Signal processing, Feature Extraction and Evaluation.
+
+## KNN Approach
 
 ### Reading Data
 Data are available in the PhysioNet website, precisely at the link below:
@@ -106,26 +111,109 @@ Dataset is divided in three standard categories:
 * MIT Header files (.hea) are short text files that describe the contents of associated signal files. These files are in the form: RECORDNAME.hea.
 * MIT Annotation files are binary files containing annotations (labels that generally refer to specific samples in associated signal files). Annotation files should be read with their associated header files. If you see files in a directory called RECORDNAME.dat, or RECORDNAME.hea, any other file with the same name but different extension, for example RECORDNAME.atr, is an annotation file for that record.
 
-
 Raw signals are loaded with rdsamp function from WFDB package:
 ```
 wfdb.rdrecord(path_to_sample, samp_from, samp_to)
 ```
 where path_to_sample is the local path where the records are stored, and samp_from and samp_to define the portion of signal, contained in a range of frequencies, considered for processing.
 Each record in the database comprehends two raw signals, coming from the two channels of ECG recording. 
+
 ### Signal Processing
-Signals are processed by using a band pass filter, in order to reduce the recording noise that would lead to uncorrect classifications.  
-The high pass filter chosen is the one suggested in "QRS detection using KNN" paper, defined by the following transfer function:  
-![equation](http://latex.codecogs.com/gif.latex?H(z)&space;=&space;\frac{-1&plus;32z^{-16}&plus;z^{-32}}{1&plus;z^{-1}})  
-This step is implemented by means of the lfilter function of scipy package:  
+Signals are processed by using a band pass filter, in order to reduce the recording noise that would lead to uncorrect classifications. 
+The sample frequency is set to 360 sample per second. 
+We used the butter method from scipy to obtain the filter coefficients in the following way: 
 ```
-output_record = signal.lfilter(num_coefficents, den_coefficients, input_record)
+b, a = signal.butter(N, Wn, btype)
 ```
-where num_coefficients and den_coefficients are the lists of exponent values of the transfer function of the numerator and the denominator respectively.  
+where N is the order of the filter, Wn is a scalar giving the critical frequencies, btype is the type of the filter.
+Once we get the coefficients, we apply a digital filter forward and backward to a signal :
+```
+filtered_channel = filtfilt(b, a, x)
+```
+where b and a are the coefficients we computed above and x is the array of data to be filtered.
+Once we filtered the channels, we apply the gradient to the whole signal with the diff function from numpy. It actually calculates the n-th discrete difference along the given axis. After this, we just square the signal to get no zeros and eventually, we normalize the gradient in the following way:
 
 
-![Non-Filtered Signal](https://image.ibb.co/gCiVgS/prefiltered100.png)
-![Filtered Signal](https://image.ibb.co/f4pQFn/filtered100.png)
+### Feature Extraction
+
+
+### Evaluation
+
+
+### Results
+
+
+## R-Peak Detection Heuristic
+
+### Reading Data
+This phase is executed in the same way as we did for the KNN approach.
+
+### Signal Processing
+Also here, the filter chosen is a passband since they maximize the energy of different QRS complexes and reduce the effect of P/T waves, motion artifacts and muscle noise. After filtering, a first-order forward differentiation is applied to emphasize large slope and high-frequency content of the QRS complex. The derivative operation reduces the effect of large P/T waves. A rectification process is then employed to obtain a positive-valued signal that eliminates detection problems in case of negative QRS complexes. In this approach, a new nonlinear transformation based on squaring, thresholding process and Shannon energy transformation is designed to avoid to misconsider some R-peak. 
+
+For further information, please see the reference [n°5]. 
+
+### Feature Extraction
+
+### Evaluation
+
+# Results
+|SIGNAL|TP|TN|FP|FN|DER|SE|
+|-|-|-|-|-|-|-|
+|100|456|129541|1|2|0.006|99.56|
+|101|362|129638|0|0|0.0|100.0|
+|102|409|129535|28|28|0.136|93.59|
+|103|407|129593|0|0|0.0|100.0|
+|104|435|129545|10|10|0.0459|97.75|
+|105|520|129462|10|8|0.0346|98.48|
+|106|352|129539|51|58|0.309|85.85|
+|107|234|129376|195|195|1.666|54.54|
+|108|164|129410|212|214|2.597|43.38|
+|109|490|129488|11|11|0.044|97.80|
+|111|424|129550|13|13|0.061|97.02|
+|112|210|129218|286|286|2.723|42.33|
+|113|371|129628|0|1|0.002|99.73|
+|114|402|129552|23|23|0.114|94.58|
+|115|386|129613|0|1|0.002|99.74|
+|116|497|129500|1|2|0.006|99.59|
+|117|307|129687|3|3|0.019|99.03|
+|118|435|129493|36|36|0.165|92.35|
+|119|395|129603|1|1|0.005|99.74|
+|121|179|129330|245|246|2.743|42.11|
+|122|497|129503|0|0|0.0|100.0|
+|123|309|129691|0|0|0.0|100.0|
+|124|349|129649|1|1|0.005|99.71|
+|200|481|129500|9|10|0.039|97.96|
+|201|435|129534|13|18|0.071|96.02|
+|202|570|129429|0|1|0.001|99.82|
+|203|489|129380|52|79|0.267|86.09|
+|205|490|129492|8|10|0.036|98.0|
+|207|255|129513|173|59|0.909|81.21|
+|208|401|129270|164|165|0.820|70.84|
+|209|583|129417|0|0|0.0|100.0|
+|210|500|129470|5|25|0.06|95.23|
+|212|524|129474|1|1|0.003|99.80|
+|213|631|129358|5|6|0.017|99.05|
+|214|453|129541|3|3|0.013|99.34|
+|215|649|129317|16|18|0.052|97.30|
+|217|184|129322|247|247|2.684|42.69|
+|219|451|129549|0|0|0.0|100.0|
+|220|416|129584|0|0|0.0|100.0|
+|221|459|129538|1|2|0.006|99.56|
+|222|561|129430|3|6|0.016|98.94|
+|223|491|129452|28|29|0.116|94.42|
+|228|369|129533|51|47|0.265|88.70|
+|230|474|129496|15|15|0.063|96.93|
+|231|371|129629|0|0|0.0|100.0|
+|232|361|129635|2|2|0.011|99.44|
+|233|515|129296|94|95|0.366|84.42|
+|234|540|129460|0|0|0.0|100.0|
+
+
+
+# READ BEFORE DELETE
+## READ BEFORE DELETE
+### READ BEFORE DELETE
 
 ### Feature Extraction
 The KNN classifier expects as input a feature vector for each sample point.
@@ -177,10 +265,10 @@ Knn = ![equation](http://latex.codecogs.com/gif.latex?\frac{50}{650000}&space;=&
 No Classifier Algorithm = ![equation](http://latex.codecogs.com/gif.latex?\frac{0.26}{650000}&space;=&space;4\cdot{10^{-6}})
 
 ## References 
-* [QRS detection using KNN](https://www.researchgate.net/publication/257736741_QRS_detection_using_K-Nearest_Neighbor_algorithm_KNN_and_evaluation_on_standard_ECG_databases) - Indu Saini, Dilbag Singh, Arun Khosla
-* [MIT-BIH Arrhythmia Database](https://pdfs.semanticscholar.org/072a/0db716fb6f8332323f076b71554716a7271c.pdf) - Moody GB, Mark RG. The impact of the MIT-BIH Arrhythmia Database. IEEE Eng in Med and Biol 20(3):45-50 (May-June 2001). (PMID: 11446209)
-* [Components of a New Research Resource for Complex Physiologic Signals.](http://circ.ahajournals.org/content/101/23/e215.full) - Goldberger AL, Amaral LAN, Glass L, Hausdorff JM, Ivanov PCh, Mark RG, Mietus JE, Moody GB, Peng C-K, Stanley HE. PhysioBank, PhysioToolkit, and PhysioNet. 
-* [WFDB Usages](https://github.com/MIT-LCP/wfdb-python) 
-* [QRS complex Detection Algorithm](https://github.com/tru-hy/rpeakdetect/tree/master)
+* 1) [QRS detection using KNN](https://www.researchgate.net/publication/257736741_QRS_detection_using_K-Nearest_Neighbor_algorithm_KNN_and_evaluation_on_standard_ECG_databases) - Indu Saini, Dilbag Singh, Arun Khosla
+* 2) [MIT-BIH Arrhythmia Database](https://pdfs.semanticscholar.org/072a/0db716fb6f8332323f076b71554716a7271c.pdf) - Moody GB, Mark RG. The impact of the MIT-BIH Arrhythmia Database. IEEE Eng in Med and Biol 20(3):45-50 (May-June 2001). (PMID: 11446209)
+* 3) [Components of a New Research Resource for Complex Physiologic Signals.](http://circ.ahajournals.org/content/101/23/e215.full) - Goldberger AL, Amaral LAN, Glass L, Hausdorff JM, Ivanov PCh, Mark RG, Mietus JE, Moody GB, Peng C-K, Stanley HE. PhysioBank, PhysioToolkit, and PhysioNet. 
+* 4) [WFDB Usages](https://github.com/MIT-LCP/wfdb-python) 
+* 5) [QRS complex Detection Algorithm](https://github.com/tru-hy/rpeakdetect/tree/master)
 
 
