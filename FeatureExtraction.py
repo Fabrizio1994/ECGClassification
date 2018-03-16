@@ -99,7 +99,7 @@ class FeatureExtraction:
 
     def __passband_filter(self, channel):
         freq = 360.0 / 2.0
-        b, a = signal.butter(1, [5 / freq, 12 / freq], btype="band")
+        b, a = signal.butter(1, [5 / freq, 12 / freq], btype="bandpass")
         new_channel = signal.filtfilt(b, a, channel)
         return new_channel
 

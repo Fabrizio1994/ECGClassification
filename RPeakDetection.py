@@ -64,7 +64,6 @@ def detect_beats(
 
     lowpass = scipy.signal.butter(1, highfreq / (rate / 2.0), 'low')
     highpass = scipy.signal.butter(1, lowfreq / (rate / 2.0), 'high')
-    # TODO: Could use an actual bandpass filter
 
     # x is the array of data to be filtered.
     ecg_low = scipy.signal.filtfilt(*lowpass, x=ecg)

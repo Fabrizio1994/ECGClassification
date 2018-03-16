@@ -3,11 +3,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
 import pprint as pp
+import numpy as np
 
 
 class GridSearch:
     def grid_search(self, features, labels):
-        X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.20)
+        X_train, X_test, Y_train, Y_test = train_test_split(features, labels, test_size=0.20)
         classifier = KNeighborsClassifier()
 
         parameters = {
@@ -23,7 +24,7 @@ class GridSearch:
                                    n_jobs=-1,
                                    verbose=10)
 
-        grid_search.fit(X_train, y_train)
+        grid_search.fit(X_train, Y_train)
         number_of_candidates = len(grid_search.cv_results_['params'])
         print("Results:")
         for j in range(number_of_candidates):
@@ -44,9 +45,8 @@ class GridSearch:
         print("Number of Folds:")
         pp.pprint(grid_search.n_splits_)
 
-        return grid_search.predict(X_test)
-
-
+        Y_predicted = grid_search.predict(X_test)
+        return metrics.confusion_matrix(Y_test, Y_predicted)
 
 
 

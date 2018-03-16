@@ -61,53 +61,54 @@ class Evaluation:
                 rpeak = index
         return rpeak
 
-    def evaluate_prediction(self, prediction, labels, signame, length,
+    def evaluate_rpeak_prediction(self, prediction, labels, signame, length,
                             ann_locations, window_size, annotation_type,
                             features_type, classifier):
-        FN, FP, TP, TN, correct_preds = self.__confusion_matrix(length, labels, prediction)
-        if TP != 0:
-            DER = ((FP + FN) / TP)
+        fn, fp, tp, tn, correct_preds = self.__confusion_matrix(length, labels, prediction)
+        if tp != 0:
+            der = ((fp + fn) / tp)
         else:
-            DER = np.infty
-        if TP + FN != 0:
-            SE = (TP / (TP + FN)) * 100
+            der = np.infty
+        if tp + fn != 0:
+            se = (tp / (tp + fn)) * 100
         else:
-            SE = 0
-        self.__write_results(DER, FN, FP, SE, TN, TP, ann_locations, annotation_type, classifier, correct_preds,
-                             features_type, signame, window_size)
+            se = 0
+        self.__write_results(der, fn, fp, se, tn, tp, annotation_type, classifier, features_type,
+                             signame, window_size, ann_locations=ann_locations, correct_preds=correct_preds)
 
-    def __confusion_matrix(self, length, labels, prediction):
-        TP = 0
-        FP = 0
-        FN = 0
-        correct_preds = []
-        for pred in prediction:
-            if pred in labels:
-                TP += 1
-                correct_preds.append(pred)
-            else:
-                FP += 1
-        for label in labels:
-            if label not in prediction:
-                FN += 1
-        TN = length - TP - FP - FN
-        return FN, FP, TP, TN, correct_preds
 
-    def __write_results(self, DER, FN, FP, SE, TN, TP, ann_locations,
-                        annotation_type, classifier, correct_preds,
-                        features_type, signame, window_size):
+    def write_knn_prediction(self, confusion_matrix, signame, window_size, annotation_type, classifier,
+                                features_type):
+
+        tn, fp, fn, tp = confusion_matrix.ravel()
+
+
+        if tp != 0:
+            der = ((fp + fn) / tp)
+        else:
+            der = np.infty
+
+        if tp + fn != 0:
+            se = (tp / (tp + fn)) * 100
+        else:
+            se = 0
+
+        self.__write_results(der, fn, fp, se, tn, tp, annotation_type, classifier, features_type, signame, window_size)
+
+    def __write_results(self, der, fn, fp, se, tn, tp, annotation_type, classifier, features_type, signame, window_size,
+                        ann_locations=None, correct_preds=None):
         file = open("reports/" + classifier + "/" + annotation_type + "_"
                     + str(window_size) + "_" + features_type + ".tsv", "a")
         if classifier == "KNN":
-            file.write("|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(TP), str(TN),
-                                                     str(FP), str(FN), str(DER),
-                                                     str(SE)))
+            file.write("|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(tp), str(tn),
+                                                     str(fp), str(fn), str(der),
+                                                     str(se)))
         else:
-            DIFF = self.__compute_average_diff(correct_preds, ann_locations)
-            file.write("|%s|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(TP),
-                                                        str(TN), str(FP),
-                                                        str(FN), str(DER),
-                                                        str(SE), str(DIFF)))
+            diff = self.__compute_average_diff(correct_preds, ann_locations)
+            file.write("|%s|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(tp),
+                                                        str(tn), str(fp),
+                                                        str(fn), str(der),
+                                                        str(se), str(diff)))
 
     def __compute_average_diff(self, correct_preds, locations):
         count = 0
