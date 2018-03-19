@@ -14,9 +14,9 @@ gs = GridSearch()
 
 
 class KNN:
-    WINDOW_SIZES = [10]
-    ANNOTATION_TYPES = ['beat']
-    FEATURE_TYPES = ['fixed']
+    WINDOW_SIZES = [10, 20, 50]
+    ANNOTATION_TYPES = ['cleaned']
+    FEATURE_TYPES = ['fixed', 'sliding', 'on_annotation']
 
     def run_knn(self):
         for name in os.listdir("sample"):
@@ -27,5 +27,6 @@ class KNN:
                         for feat_type in self.FEATURE_TYPES:
                             train_features, train_labels = fe.extract_features("sample/" + signal_name, ann_type, size,
                                                                                features_type=feat_type)
-                            confusion_matrix = gs.grid_search(train_features, train_labels)
-                            eval.write_knn_prediction(confusion_matrix, signal_name, size, ann_type, 'KNN', feat_type)
+                            #confusion_matrix = gs.grid_search(train_features, train_labels)
+                            tn, fp, fn, tp = gs.grid_search(train_features, train_labels)
+                            eval.write_knn_prediction(tn, fp, fn, tp, signal_name, size, ann_type, 'KNN', feat_type)

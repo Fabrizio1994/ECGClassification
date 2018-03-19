@@ -77,11 +77,11 @@ class Evaluation:
                              signame, window_size, ann_locations=ann_locations, correct_preds=correct_preds)
 
 
-    def write_knn_prediction(self, confusion_matrix, signame, window_size, annotation_type, classifier,
+    def write_knn_prediction(self, tn, fp, fn, tp, signame, window_size, annotation_type, classifier,
                                 features_type):
 
-        tn, fp, fn, tp = confusion_matrix.ravel()
-
+        '''if confusion_matrix.ravel() is not None:
+            tn, fp, fn, tp = confusion_matrix.ravel()'''
 
         if tp != 0:
             der = ((fp + fn) / tp)

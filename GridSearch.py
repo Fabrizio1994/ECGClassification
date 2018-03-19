@@ -46,7 +46,8 @@ class GridSearch:
         pp.pprint(grid_search.n_splits_)
 
         Y_predicted = grid_search.predict(X_test)
-        return metrics.confusion_matrix(Y_test, Y_predicted)
+        #return metrics.confusion_matrix(Y_test, Y_predicted)
+        return metrics.confusion_matrix(Y_test, Y_predicted, labels[0, 1]).ravel()
 
 
 
