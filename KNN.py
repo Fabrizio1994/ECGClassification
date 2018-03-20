@@ -15,8 +15,9 @@ gs = GridSearch()
 
 class KNN:
     WINDOW_SIZES = [10, 20, 50]
-    ANNOTATION_TYPES = ['beat']
-    FEATURE_TYPES = ['fixed', 'sliding']
+    ANNOTATION_TYPES = ['cleaned']
+    FEATURE_TYPES = ['sliding']
+    #FEATURE_TYPES = ['fixed', 'sliding']
 
     def run_knn(self):
         for name in os.listdir("sample"):

@@ -28,7 +28,7 @@ class Evaluation:
                         prediction = self.__get_predictions(signame, 0,
                                                           window_size=size)
                         labels = self.get_labels(locations, size)
-                        self.evaluate_prediction(prediction, labels,
+                        self.evaluate_rpeak_prediction(prediction, labels,
                                                  signame, self.SIZE_LAST_20,
                                                  locations, window_size=size,
                                                  annotation_type=type,
@@ -51,6 +51,13 @@ class Evaluation:
                 prediction.append(real_peak_index)
         return prediction
 
+    def get_labels(self, locations, window_size):
+        labels = []
+        interval = [q for q in range(int(-window_size / 2), int(window_size / 2) + 1)]
+        for loc in locations:
+            labels.append([loc + q for q in interval])
+        return labels
+
     def __get_r_peak(self, channel, value, window_size):
         indexes = range(int(value - window_size / 2), int(value + window_size / 2 + 1))
         max = abs(channel[value])
@@ -62,8 +69,7 @@ class Evaluation:
         return rpeak
 
     def evaluate_rpeak_prediction(self, prediction, labels, signame, length,
-                            ann_locations, window_size, annotation_type,
-                            features_type, classifier):
+                            ann_locations, window_size, annotation_type, classifier):
         fn, fp, tp, tn, correct_preds = self.__confusion_matrix(length, labels, prediction)
         if tp != 0:
             der = ((fp + fn) / tp)
@@ -73,15 +79,30 @@ class Evaluation:
             se = (tp / (tp + fn)) * 100
         else:
             se = 0
-        self.__write_results(der, fn, fp, se, tn, tp, annotation_type, classifier, features_type,
+        self.__write_results(der, fn, fp, se, tn, tp, annotation_type, classifier,
                              signame, window_size, ann_locations=ann_locations, correct_preds=correct_preds)
 
+    def __confusion_matrix(self, length, labels, prediction):
+        TP = 0
+        FP = 0
+        FN = 0
+        correct_preds = []
+        for pred in prediction:
+            for label in labels:
+                if pred in label:
+                    TP += 1
+                    correct_preds.append(pred)
+            else:
+                FP += 1
+        for label in labels:
+            if label not in prediction:
+                FN += 1
+        TN = length - TP - FP - FN
+        return FN, FP, TP, TN, correct_preds
 
     def write_knn_prediction(self, tn, fp, fn, tp, signame, window_size, annotation_type, classifier,
                                 features_type):
 
-        '''if confusion_matrix.ravel() is not None:
-            tn, fp, fn, tp = confusion_matrix.ravel()'''
 
         if tp != 0:
             der = ((fp + fn) / tp)
@@ -95,10 +116,16 @@ class Evaluation:
 
         self.__write_results(der, fn, fp, se, tn, tp, annotation_type, classifier, features_type, signame, window_size)
 
-    def __write_results(self, der, fn, fp, se, tn, tp, annotation_type, classifier, features_type, signame, window_size,
-                        ann_locations=None, correct_preds=None):
-        file = open("reports/" + classifier + "/" + annotation_type + "_"
-                    + str(window_size) + "_" + features_type + ".tsv", "a")
+    def __write_results(self, der, fn, fp, se, tn, tp, annotation_type, classifier, signame, window_size,
+                        features_type=None, ann_locations=None, correct_preds=None):
+
+        if features_type is not None:
+            file = open("reports/" + classifier + "/" + annotation_type + "_"
+                        + str(window_size) + "_" + features_type + ".tsv", "a")
+        else:
+            file = open("reports/" + classifier + "/" + annotation_type + "_"
+                        + str(window_size) + ".tsv", "a")
+
         if classifier == "KNN":
             file.write("|%s|%s|%s|%s|%s|%s|%s|\n" % (signame, str(tp), str(tn),
                                                      str(fp), str(fn), str(der),
