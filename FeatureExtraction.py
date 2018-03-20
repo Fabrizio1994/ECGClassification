@@ -77,16 +77,16 @@ class FeatureExtraction:
 
     def __get_qrs_region(self, samples, annotated_index, window_size, siglen):
         boundary = int(window_size/2)
-        if samples[annotated_index] <= siglen - boundary:
+        if samples[annotated_index] < siglen - boundary:
             if samples[annotated_index] - boundary > 0:
-                return [q for q in range(samples[annotated_index] - boundary,
+                return [q for q in range(samples[annotated_index] - boundary +1 ,
                                          samples[annotated_index] + boundary + 1)]
             else:
                 return [q for q in range(samples[annotated_index] + boundary + 1)]
         else:
             gap = siglen - samples[annotated_index]
             return [q for q in range(samples[annotated_index] - boundary,
-                                     samples[annotated_index] + gap + 1)]
+                                     samples[annotated_index] + gap)]
 
 
 
