@@ -14,7 +14,7 @@ The ECG arise because active tissues within the heart generate electrical curren
 
 ### QRS Region
 The QRS complex is the central part of an ECG. It corresponds to the depolarization of the right and left ventricles of the human heart. A Q wave is any downward deflection after the P wave. An R wave follows as an upward deflection, and the S wave is any downward deflection after the R wave. An example of a PQRST segment can be seen in the picture below. 
-![QRS complex](https://preview.ibb.co/htTGsn/PQRST.png) 
+![QRS complex](https://preview.ibb.co/htTGsn/PQRST.png)  
 The normal ECG signal consists of P, QRS and T waves. The QRS interval is a measure of the total duration of ventricular tissue depolarization. 
 QRS detection provides the fundamental reference for almost all automated ECG analysis algorithms. Before to perform QRS detection, removal or suppresion of noise is required. 
 
@@ -97,7 +97,7 @@ http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.
 ### Feature Extraction
 We executed the above procedure and stored the results obtained defining features in two different ways: at sample level and at window level.
 #### Sample level
-As suggested in the paper [QRS detection using KNN], each feature is a 2D vector containing the gradient values for a given sample, one for each channel. The feature matrix shape is then 650.000 X 2.
+As suggested in the paper [QRS detection using KNN], each feature is a 2D vector containing the gradient values for a given sample, one for each channel. The feature matrix shape is then 650.000 X 2.  
 Each feature is labeled with 1 or -1 whether it is located in a range, called window, of variable size around a Beat Annotation. We stored the results obtained with windows of size 10, 20 and 50 samples.
 
 #### Window level
