@@ -14,7 +14,7 @@ The ECG arise because active tissues within the heart generate electrical curren
 
 ### QRS Region
 The QRS complex is the central part of an ECG. It corresponds to the depolarization of the right and left ventricles of the human heart. A Q wave is any downward deflection after the P wave. An R wave follows as an upward deflection, and the S wave is any downward deflection after the R wave. An example of a PQRST segment can be seen in the picture below. 
-![QRS complex](https://preview.ibb.co/htTGsn/PQRST.png)
+![QRS complex](https://preview.ibb.co/htTGsn/PQRST.png) 
 The normal ECG signal consists of P, QRS and T waves. The QRS interval is a measure of the total duration of ventricular tissue depolarization. 
 QRS detection provides the fundamental reference for almost all automated ECG analysis algorithms. Before to perform QRS detection, removal or suppresion of noise is required. 
 
