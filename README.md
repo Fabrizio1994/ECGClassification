@@ -44,7 +44,6 @@ Each signal contains cardiologists annotations, which describe the behaviour of 
 |f|Fusion of paced and normal beat|
 |Q|Unclassifiable beat|
 |?|Beat not classified during|Non-Beat Annotation | Meaning| 
-|--------------------|--------|
 
 For the other kind of annotations, which do not refer to QRS region, look at the references.
 
