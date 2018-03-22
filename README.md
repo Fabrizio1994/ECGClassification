@@ -8,18 +8,18 @@ The modules are implemented for use with Python 3.x and they consist of the foll
 
 ## Introduction
 The function of human body is frequently associated with signals of electrical, chemical, or acoustic origin.  
-Extracting useful information from these biomedical signals has been found very helpful in explaining and identifying various pathological conditions. 
-The most important are the signals which are originated from the heart's electrical activity. This electrical activity of the human heart, though it is quite low in amplitude (about 1 mV) can be detected on the body surface and recorded as an electrocardiogram (ECG) signal. 
+Extracting useful information from these biomedical signals has been found very helpful in explaining and identifying various pathological conditions.  
+The most important are the signals which are originated from the heart's electrical activity. This electrical activity of the human heart, though it is quite low in amplitude (about 1 mV) can be detected on the body surface and recorded as an electrocardiogram (ECG) signal.  
 The ECG arise because active tissues within the heart generate electrical currents, which flow most intensively within the heart muscle itself, and with lesser intensity throughout the body. The flow of current creates voltages between the sites on the body surface where the electrodes are placed. 
 
 ### QRS Region
 The QRS complex is the central part of an ECG. It corresponds to the depolarization of the right and left ventricles of the human heart. A Q wave is any downward deflection after the P wave. An R wave follows as an upward deflection, and the S wave is any downward deflection after the R wave. An example of a PQRST segment can be seen in the picture below. 
 ![QRS complex](https://preview.ibb.co/htTGsn/PQRST.png)  
-The normal ECG signal consists of P, QRS and T waves. The QRS interval is a measure of the total duration of ventricular tissue depolarization. 
+The normal ECG signal consists of P, QRS and T waves. The QRS interval is a measure of the total duration of ventricular tissue depolarization.  
 QRS detection provides the fundamental reference for almost all automated ECG analysis algorithms. Before to perform QRS detection, removal or suppresion of noise is required. 
 
 ## MIT-BIH Arrhythmia Database
-The MIT-BIH Arrhytmia DB contains 48 half-hour excerpts of two-channel ambulatory ECG recordings, obtained from 47 subjects (records 201 and 202 are from the same subject) studied by the BIH Arrhythmia Laboratory between 1975 and 1979. Of these, 23 were chosen at random from a collection of over 4000 Holter tapes, and the other 25 (the "200 series") were selected to include examples of uncommon but clinically important arrhythmias that would not be well represented in a small random sample. 
+The MIT-BIH Arrhytmia DB contains 48 half-hour excerpts of two-channel ambulatory ECG recordings, obtained from 47 subjects (records 201 and 202 are from the same subject) studied by the BIH Arrhythmia Laboratory between 1975 and 1979. Of these, 23 were chosen at random from a collection of over 4000 Holter tapes, and the other 25 (the "200 series") were selected to include examples of uncommon but clinically important arrhythmias that would not be well represented in a small random sample.  
 Each signal contains cardiologists annotations, which describe the behaviour of the signal in the location in which they are placed. In particular, the Beat Annotations classify each QRS complex with one of the following labels:
 
 ### Annotations 
@@ -48,11 +48,11 @@ Each signal contains cardiologists annotations, which describe the behaviour of 
 For the other kind of annotations, which do not refer to QRS region, look at the references.
 
 ## QRS and R peak detection
-The aim of this work is to describe different approaches for encountering the problems of QRS and R peak detection, and evaluating and comparing the results obtained using the same standard ECG databases.
+The aim of this work is to describe different approaches for encountering the problems of QRS and R peak detection, and evaluating and comparing the results obtained using the same standard ECG databases.  
 In order to do this, we used two different algorithms: one based on the KNN classifier and the other based on a heuristic method.
 
 ## Data Loading 
-Data are available in the PhysioNet website, precisely at the link below:
+Data are available in the PhysioNet website, precisely at the link below:  
 https://www.physionet.org/physiobank/database/mitdb/  
 Raw signals are loaded inside the Python module using the wfdb library.
 
@@ -61,26 +61,26 @@ pip install wfdb
 ```
 ## KNN APPROACHES
 ## Signal Preprocessing
-Before the classification phase, signals are processed by using a band pass filter, in order to reduce the recording noise that would lead to uncorrect classifications. 
-The sample frequency is set to 360 sample per second. 
+Before the classification phase, signals are processed by using a band pass filter, in order to reduce the recording noise that would lead to uncorrect classifications.  
+The sample frequency is set to 360 sample per second.  
 We used the butter method from scipy to obtain the filter coefficients in the following way: 
 ```
 b, a = signal.butter(N, Wn, btype="bandpass")
 ```
-where N is the order of the filter, Wn is a scalar giving the critical frequencies, btype is the type of the filter.
+where N is the order of the filter, Wn is a scalar giving the critical frequencies, btype is the type of the filter.  
 Once we get the coefficients, we apply a digital filter forward and backward to a signal :
 ```
 filtered_channel = filtfilt(b, a, x)
 ```
-where b and a are the coefficients we computed above and x is the array of data to be filtered.
+where b and a are the coefficients we computed above and x is the array of data to be filtered.  
 Once we filtered the channels, we apply the gradient to the whole signal with the diff function from numpy. It actually calculates the n-th discrete difference along the given axis. After this, we just square the signal to get no zeros and eventually, we normalize the gradient.
 
 
 ## Classification
-In this scope, the QRS detection problem is encountered as a binary classification problem:
-A signal is decomposed in features of variable size that can be detected either as a QRS complex or not, and considered as input for a KNN classifier.
+In this scope, the QRS detection problem is encountered as a binary classification problem:  
+A signal is decomposed in features of variable size that can be detected either as a QRS complex or not, and considered as input for a KNN classifier.  
 A portion of the signal is labeled as a QRS complex depending on whether it contains a Beat Annotation.  
-Then a classifier is trained with the 80% of the length of the signal, while the last 20% is used for testing purpose.
+Then a classifier is trained with the 80% of the length of the signal, while the last 20% is used for testing purpose.  
 KNN classifiers are trained by means of a 5-fold Cross Validated Grid Search in the following space of parameters : 
 ```
 parameters = {  
@@ -89,7 +89,7 @@ parameters = {
 'p': [1,2]  
 }
 ```
-The Grid Search provides, for eache signal, the best configuration of parameters according to the accuracy score.
+The Grid Search provides, for eache signal, the best configuration of parameters according to the accuracy score.  
 http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html for further readings.
 
 
@@ -101,7 +101,7 @@ As suggested in the paper [QRS detection using KNN], each feature is a 2D vector
 Each feature is labeled with 1 or -1 whether it is located in a range, called window, of variable size around a Beat Annotation. We stored the results obtained with windows of size 10, 20 and 50 samples.
 
 #### Window level
-In this approach, the signal is divided in windows of samples of fixed sizes (again 10, 20 and 50 samples), which are considered as features. The feature vector is composed by the gradients referred to all samples in the window.
+In this approach, the signal is divided in windows of samples of fixed sizes (again 10, 20 and 50 samples), which are considered as features. The feature vector is composed by the gradients referred to all samples in the window.  
 A window is labeled as QRS region if contains a Beat Annotation.
 ## RPEAK DETECTION HEURISTIC
 
