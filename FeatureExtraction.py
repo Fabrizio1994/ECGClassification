@@ -1,72 +1,56 @@
 import wfdb
 from scipy import signal
 import numpy as np
-
+from collections import defaultdict
 
 class FeatureExtraction:
     def extract_features(self, sample_name, annotation_type, window_size,
-                         features_type="fixed"):
+                         features_type="fixed", channels_ids=[0, 1]):
         print("Extracting features for signal " + sample_name + "...")
         record = wfdb.rdrecord(sample_name)
         annotation = wfdb.rdann('annotations/' + annotation_type + '/' +
                                 sample_name.replace("sample/", ""), 'atr')
-        first_channel = []
-        second_channel = []
-        for elem in record.p_signal:
-            first_channel.append(elem[0])
-            second_channel.append(elem[1])
-        filtered_first_channel = self.__passband_filter(first_channel)
-        filtered_second_channel = self.__passband_filter(second_channel)
-        gradient_channel1 = self.__normalized_gradient(filtered_first_channel)
-        gradient_channel2 = self.__normalized_gradient(filtered_second_channel)
-        print("actual peaks:" + str(len(annotation.sample)))
-        if features_type == 'on_annotation':
-            return self.__compute_on_annotation_features(gradient_channel1, gradient_channel2, annotation)
-        elif features_type == "sliding":
-            return self.__compute_sliding_features(gradient_channel1,
-                                                   gradient_channel2,
-                                                   annotation,
-                                                   window_size)
-        return self.__compute_fixed_features(gradient_channel1, gradient_channel2, annotation, window_size)
 
-    def __compute_fixed_features(self, channel1, channel2, annotation, window_size):
+        channels_map = defaultdict(list)
+        for elem in record.p_signal:
+            for id in channels_ids:
+                channels_map[id].append(elem[id])
+
+        for channel in channels_map:
+            channels_map[channel] = self.__normalized_gradient(self.__passband_filter(channels_map[channel]))
+
+        print("actual peaks:" + str(len(annotation.sample)))
+        if features_type == "sliding":
+            return self.__compute_sliding_features(channels_map, annotation, window_size)
+        return self.__compute_fixed_features(channels_map, annotation, window_size)
+
+    def __compute_fixed_features(self, channels_map, annotation, window_size):
         features = []
-        for i in range(len(channel1)):
-            features.append([channel1[i], channel2[i]])
+        siglen = len(channels_map[0])
+        for i in range(siglen):
+            features.append([channels_map[channel_id][i] for channel_id in channels_map.keys()])
         samples = annotation.sample
-        labels = [-1] * len(channel1)
+        labels = [-1] * siglen
         for j in range(len(samples)):
-            siglen = len(channel1)
             annotated_index = j
             qrs_region = self.__get_qrs_region(samples, annotated_index, window_size, siglen)
             for sample in qrs_region:
                 labels[sample] = 1
         return np.asarray(features), np.asarray(labels)
 
-    def __compute_on_annotation_features(self, channel1, channel2, annotation):
-        features = []
-        for i in range(len(channel1)):
-            features.append([channel1[i], channel2[i]])
-        samples = annotation.sample
-        labels = [-1] * len(channel1)
-        for j in range(len(samples)):
-            labels[samples[j]] = -1
-        return np.asarray(features), np.asarray(labels)
-
-    def __compute_sliding_features(self, channel1, channel2, annotation,
-                                   window_size):
+    def __compute_sliding_features(self, channels_map, annotation, window_size):
         samples = annotation.sample
         features = []
         labels = []
         i = 0
-        while i < len(channel1) - window_size:
+        while i < len(channels_map[0]) - window_size:
             feature = []
             annotated = False
-            for j in range(i, i +window_size):
+            for j in range(i, i + window_size):
                 if j in samples:
                     annotated = True
-                feature.append(channel1[j])
-                feature.append(channel2[j])
+                for id in channels_map.keys():
+                    feature.append(channels_map[id][j])
             features.append(feature)
             if annotated:
                 labels.append(1)
