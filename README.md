@@ -111,9 +111,9 @@ Also here, the filter chosen is a passband since they maximize the energy of dif
 For further information, please see the reference [n°5]. 
 
 
-### Evaluation
+## EVALUATION
 
-#### Window Level 2 Channels
+### Window Level 2 Channels
 |SIGNAL|SE_10|SE_20|SE_50|RPEAK-SE|DIFF|
 |-|-|-|-|-|-|
 |100|99.041|99.332|99.129|99.563|0.037|
@@ -168,8 +168,8 @@ For further information, please see the reference [n°5].
 
 
 
-#### Sample Level 2 Channels
-##### 10 sample window
+### Sample Level 2 Channels
+#### 10 sample window
 |SIGNAL|TP|TN|FP|FN|DER|SE|
 |-|-|-|-|-|-|-|
 |124|13618|112275|1228|2879|0.30158613599647527|82.5483421228102|
@@ -191,7 +191,7 @@ For further information, please see the reference [n°5].
 |209|25548|96521|2856|5075|0.3104352591200877|83.42748914214806|
 |217|17234|104589|2903|5274|0.47446907276314265|76.56833125999644|
 
-##### 20 sample window
+#### 20 sample window
 |SIGNAL|TP|TN|FP|FN|DER|SE|
 |-|-|-|-|-|-|-|
 |124|5050|122365|930|1655|0.5118811881188119|75.31692766592096|
@@ -214,7 +214,7 @@ For further information, please see the reference [n°5].
 |217|6687|118958|1768|2587|0.6512636458800658|72.10480914384301|
 
 
-##### 50 sample window
+#### 50 sample window
 |SIGNAL|TP|TN|FP|FN|DER|SE|
 |-|-|-|-|-|-|-|
 |124|13618|112275|1228|2879|0.30158613599647527|82.5483421228102|
@@ -237,7 +237,7 @@ For further information, please see the reference [n°5].
 |217|17234|104589|2903|5274|0.47446907276314265|76.56833125999644|
 
 
-#### Window Level One Channel
+### Window Level One Channel
 
 |SIGNAL|KNN-SE-10|KNN-SE-20|KNN-SE-50|RPEAK-SE|DIFF|
 |------|---------|---------|---------|--------|----|
