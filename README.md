@@ -290,6 +290,8 @@ For further information, please see the reference [n°5].
 |233|87.055|93.421|96.173|84.426|0.373|
 |234|98.059|99.815|99.625|100.0|0.011|
 
+## AVERAGE RESULTS FOR KNN
+![KNN-Plot-Results](http://image.ibb.co/n69nc7/Schermata_2018_03_27_alle_09_17_35.png)  
 
 # Elapsed time for a single point (patient 100) in seconds
 Knn = ![equation](http://latex.codecogs.com/gif.latex?\frac{50}{650000}&space;=&space;7\cdot{10^{-5}})  
