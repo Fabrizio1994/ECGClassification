@@ -262,7 +262,7 @@ For further information, please see the reference [n°5].
 
 # FIRST CHANNEL RESULTS
 
-|SIGNAL|KNN-SE-10|KNN-SE-20|KNN-SE-50|DIFF|
+|SIGNAL|KNN-SE-10|KNN-SE-20|KNN-SE-50|RPEAK-SE|DIFF|
 |------|---------|---------|---------|--------|----|
 |100|99.099|98.878|99.350|
 |101|96.954|97.010|99.204|
