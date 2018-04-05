@@ -3,6 +3,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
 import numpy as np
+
+
 class GridSearch:
 
     def qrs_gridsearch(self, features, labels):
@@ -10,7 +12,7 @@ class GridSearch:
         return self.qrs_confusion_matrix(Y_test, Y_predicted)
 
     def rpeak_gridsearch(self, features, labels, Y_test, window_size, signal):
-        #array of -1,1 for each region of size = window_size
+        # array of -1,1 for each region of size = window_size
         predicted_regions = self.predict(features, labels)[1]
         Y_predicted = self.get_peaks(predicted_regions, window_size, signal)
         return Y_predicted

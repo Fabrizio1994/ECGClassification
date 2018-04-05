@@ -42,7 +42,6 @@ class KNN:
                     fn, fp, tp, tn = eval.confusion_matrix(Y_test, peaks)[0:4]
                     se = eval.compute_sensitivity(fp, fn, tp)
                     results[name].append(se)
-
         eval.write_knn_prediction(results)
 
     def qrs_detection(self):
@@ -52,15 +51,13 @@ class KNN:
                 name = name.replace(".atr", "")
                 path = ("sample/"+self.DB+"/"+name)
                 for size in self.WINDOW_SIZES:
-                    for feat_type in self.FEATURE_TYPES:
-                        for channels in self.CHANNEL_IDS:
-                            annotation = wfdb.rdann(path, 'atr')
-                            train_features, train_labels = fe.extract_features(path, annotation, size,
-                                                                               features_type=feat_type,
-                                                                               channels_ids=channels)
-                            tn, fp, fn, tp = gs.qrs_gridsearch(train_features, train_labels)
-                            se = eval.compute_sensitivity(fp, fn, tp)
-                            results[name].append(se)
+                    annotation = wfdb.rdann(path, 'atr')
+                    train_features, train_labels = fe.extract_features(path, annotation, size,
+                                                                       features_type=self.FEATURE_TYPE,
+                                                                       channels_ids=self.CHANNEL_IDS)
+                    tn, fp, fn, tp = gs.qrs_gridsearch(train_features, train_labels)
+                    se = eval.compute_sensitivity(fp, fn, tp)
+                    results[name].append(se)
         eval.write_knn_prediction(results)
 
 
