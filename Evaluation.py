@@ -118,8 +118,11 @@ class Evaluation:
         return se
 
     def write_knn_prediction(self, results):
-        file = open('reports/KNN/sliding.tsv', "w")
+        # EDIT THIS!!
+        file_path = ""
+        file = open(file_path, "w")
         for signal in results:
+            # AND THIS ACCORDING TO THE NUMBER OF WINDOW SIZES
             file.write("|%s|%s|%s|%s|\n" % (str(signal), str(results[signal][0]), str(results[signal][1]),
                                             str(results[signal][2])))
 
