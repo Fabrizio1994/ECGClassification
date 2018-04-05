@@ -4,31 +4,27 @@ import numpy as np
 from collections import defaultdict
 
 class FeatureExtraction:
-    def extract_features(self, sample_name, annotation_type, window_size,
+    channels_map = defaultdict(list)
+
+    def extract_features(self, sample_name, annotation, window_size,
                          features_type="fixed", channels_ids=[0, 1]):
+        self.channels_map.clear()
         print("Extracting features for signal " + sample_name + "...")
         record = wfdb.rdrecord(sample_name)
-        annotation = wfdb.rdann('annotations/' + annotation_type + '/' +
-                                sample_name.replace("sample/", ""), 'atr')
-
-        channels_map = defaultdict(list)
         for elem in record.p_signal:
             for id in channels_ids:
-                channels_map[id].append(elem[id])
-
-        for channel in channels_map:
-            channels_map[channel] = self.__normalized_gradient(self.__passband_filter(channels_map[channel]))
-
-        print("actual peaks:" + str(len(annotation.sample)))
+                self.channels_map[id].append(elem[id])
+        for channel in self.channels_map:
+            self.channels_map[channel] = self.__normalized_gradient(self.__passband_filter(self.channels_map[channel]))
         if features_type == "sliding":
-            return self.__compute_sliding_features(channels_map, annotation, window_size)
-        return self.__compute_fixed_features(channels_map, annotation, window_size)
+            return self.compute_sliding_features(annotation, window_size)
+        return self.compute_fixed_features(annotation, window_size)
 
-    def __compute_fixed_features(self, channels_map, annotation, window_size):
+    def compute_fixed_features(self, annotation, window_size):
         features = []
-        siglen = len(channels_map[0])
+        siglen = len(self.channels_map[0])
         for i in range(siglen):
-            features.append([channels_map[channel_id][i] for channel_id in channels_map.keys()])
+            features.append([self.channels_map[channel_id][i] for channel_id in self.channels_map.keys()])
         samples = annotation.sample
         labels = [-1] * siglen
         for j in range(len(samples)):
@@ -38,19 +34,19 @@ class FeatureExtraction:
                 labels[sample] = 1
         return np.asarray(features), np.asarray(labels)
 
-    def __compute_sliding_features(self, channels_map, annotation, window_size):
+    def compute_sliding_features(self, annotation, window_size):
         samples = annotation.sample
         features = []
         labels = []
         i = 0
-        while i < len(channels_map[0]) - window_size:
+        while i < len(self.channels_map[0]) - window_size:
             feature = []
             annotated = False
             for j in range(i, i + window_size):
                 if j in samples:
                     annotated = True
-                for id in channels_map.keys():
-                    feature.append(channels_map[id][j])
+                for id in self.channels_map.keys():
+                    feature.append(self.channels_map[id][j])
             features.append(feature)
             if annotated:
                 labels.append(1)
@@ -71,8 +67,6 @@ class FeatureExtraction:
             gap = siglen - samples[annotated_index]
             return [q for q in range(samples[annotated_index] - boundary,
                                      samples[annotated_index] + gap)]
-
-
 
     def __normalized_gradient(self, channel):
         gradient = np.diff(channel)
