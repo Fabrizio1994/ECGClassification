@@ -119,12 +119,19 @@ class Evaluation:
 
     def write_knn_prediction(self, results):
         # EDIT THIS!!
-        file_path = ""
+        file_path = "reports/KNN/incartdb/qrsdetection/fixed_onechannel.tsv"
         file = open(file_path, "w")
-        for signal in results:
+        for signal in sorted(results.keys()):
             # AND THIS ACCORDING TO THE NUMBER OF WINDOW SIZES
-            file.write("|%s|%s|%s|%s|\n" % (str(signal), str(results[signal][0]), str(results[signal][1]),
-                                            str(results[signal][2])))
+            file.write("|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|\n" % (str(signal), str(results[signal][0]),
+                                                              str(results[signal][1]),
+                                                              str(results[signal][2]),
+                                                              str(results[signal][3]),
+                                                              str(results[signal][4]),
+                                                              str(results[signal][5]),
+                                                              str(results[signal][6]),
+                                                              str(results[signal][7]),
+                                                              str(results[signal][8])))
 
     def compute_average_diff(self, correct_preds, locations):
         count = 0

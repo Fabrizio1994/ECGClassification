@@ -1,4 +1,4 @@
 from KNN import KNN
 
 knn = KNN()
-knn.rpeak_detection()
+knn.qrs_detection()

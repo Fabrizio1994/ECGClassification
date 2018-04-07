@@ -22,9 +22,9 @@ class GridSearch:
         classifier = KNeighborsClassifier()
 
         parameters = {
-            'n_neighbors': [11],
-            'weights': ['uniform'],
-            'p': [1]
+            'n_neighbors': [1, 3, 5, 7, 9, 11],
+            'weights': ['uniform', 'distance'],
+            'p': [1, 2]
         }
 
         grid_search = GridSearchCV(classifier,
