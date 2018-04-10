@@ -220,7 +220,7 @@ For further information, please see the reference [n°5].
 
 #### Window Level One Channel Plot
 
-![KNN-Plot-Results](https://i.imgur.com/n0khJeX.png)
+![KNN-Plot-Results](https://i.imgur.com/LwgVC2O.png)
 
 ### Incart Database
 #### Window Level One Channel
@@ -301,6 +301,10 @@ For further information, please see the reference [n°5].
 |I73|96.939|98.54|99.196|99.202|98.99|99.75|99.758|99.492|99.745|
 |I74|92.827|96.603|96.687|98.261|98.28|98.077|98.34|98.975|99.793|
 |I75|92.905|96.591|97.625|99.536|98.627|99.77|99.01|98.804|99.527|
+
+#### Window Level One Channel Plot
+
+![KNN-Plot-Results](https://i.imgur.com/bN1eEqT.png)
 
 #### Sample Level One Channel
 |SIGNAL|SE-10|SE-20|SE-30|SE-50|SE-70|SE-90|SE-110|SE-130|SE-150|
