@@ -7,18 +7,13 @@ import numpy as np
 
 class GridSearch:
 
-    def qrs_gridsearch(self, features, labels):
-        Y_test, Y_predicted = self.predict(features, labels)
-        return self.qrs_confusion_matrix(Y_test, Y_predicted)
-
-    def rpeak_gridsearch(self, features, labels, Y_test, window_size, signal):
-        # array of -1,1 for each region of size = window_size
-        predicted_regions = self.predict(features, labels)[1]
-        Y_predicted = self.get_peaks(predicted_regions, window_size, signal)
-        return Y_predicted
-
-    def predict(self, features, labels):
-        X_train, X_test, Y_train, Y_test = train_test_split(features, labels, test_size=0.20)
+    def predict(self, features, labels, window_size):
+        sig_len = (len(features) + 1) * window_size
+        test_index = int(int(sig_len / 5 * 4) / window_size)
+        X_train = features[:test_index]
+        X_test = features[test_index:]
+        Y_train = labels[:test_index]
+        Y_test = labels[test_index:]
         classifier = KNeighborsClassifier()
 
         parameters = {
@@ -44,15 +39,13 @@ class GridSearch:
     def get_peaks(self, predicted_regions, window_size, signal):
         siglen = len(signal) + 1
         test_index = int(siglen/5)*4
-        test_size = siglen - test_index
-        index = int(test_size / window_size)
         Y_predicted = []
         window_start = test_index
-        for label in predicted_regions[-index:]:
+        for label in predicted_regions:
             if label == 1:
-                window_end = window_start + window_size + 1
+                window_end = window_start + window_size
                 qrs_region = [abs(signal[value]) for value in range(window_start, window_end)]
-                peak  = window_start + np.argmax(qrs_region)
+                peak = window_start + np.argmax(qrs_region)
                 Y_predicted.append(peak)
             window_start += window_size
         return Y_predicted
