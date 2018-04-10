@@ -9,17 +9,17 @@ class Evaluation:
     siglen = 650000
     test_index = 520000
     test_size = 130000
-    DB = "incart"
+    DB = "mitdb"
 
     # noinspection PyTypeChecker
     def validate_r_peak(self):
         prediction_window_sizes = [10, 20, 50]
         evaluation_window_size = 10
-        for name in os.listdir("sample"):
+        for name in sorted(os.listdir("sample/" + self.DB)):
             if name.endswith('.atr'):
                 signame = name.replace(".atr", "")
                 print(signame)
-                annotation = wfdb.rdann(signame, 'atr')
+                annotation = wfdb.rdann("sample/"+ self.DB + "/" +signame, 'atr')
                 self.siglen = wfdb.rdrecord("sample/"+self.DB+"/"+signame).sig_len
                 self.test_index = int(self.siglen/5)*4
                 self.test_size = self.siglen - self.test_index
@@ -27,21 +27,19 @@ class Evaluation:
                 for window_size in prediction_window_sizes:
                     prediction = self.get_predictions(signame, 0, prediction_window_size=window_size)
                     labels = self.get_labels(locations, evaluation_window_size)
-                    self.evaluate_rpeak_prediction(prediction, labels, signame, window_size,locations,
-                                                   annotation_type=type)
+                    self.evaluate_rpeak_prediction(prediction, labels, signame, window_size,locations)
 
     def get_predictions(self, signame, n_channel, prediction_window_size):
-        record = wfdb.rdrecord('sample/'+self.DB + signame)
+        record = wfdb.rdrecord('sample/'+self.DB +"/" + signame)
         channel = []
         for elem in record.p_signal:
             channel.append(elem[n_channel])
         prediction = []
-        file = open("rpeak_output/" + str(signame) + "_" + str(n_channel + 1)
-                    + ".csv", "r")
+        file = open("rpeak_output/" + self.DB + "/" + str(signame) + "_1.csv", "r")
         for line in file:
-            value = int(line.replace("\n", ""))
-            if value >= self.test_index:
-                real_peak_index = self.get_r_peak(channel, value, prediction_window_size)
+            zero_crossing = int(line.replace("\n", ""))
+            if zero_crossing >= self.test_index:
+                real_peak_index = self.get_r_peak(channel, zero_crossing, prediction_window_size)
                 prediction.append(real_peak_index)
         return prediction
 
@@ -53,10 +51,14 @@ class Evaluation:
             labels.append([loc + q for q in interval])
         return labels
 
-    def get_r_peak(self, channel, value, window_size):
-        indexes = range(int(value - window_size / 2), int(value + window_size / 2 + 1))
-        max = abs(channel[value])
-        rpeak = value
+    def get_r_peak(self, channel, zero_crossing, window_size):
+        # overflow
+        if int(zero_crossing + window_size / 2) >= len(channel):
+            indexes = range(int(zero_crossing - window_size /2), len(channel))
+        else:
+            indexes = range(int(zero_crossing - window_size / 2), int(zero_crossing + window_size / 2 + 1))
+        max = abs(channel[zero_crossing])
+        rpeak = zero_crossing
         for index in indexes:
             if abs(channel[index]) > max:
                 max = channel[index]
@@ -64,7 +66,7 @@ class Evaluation:
         return rpeak
 
     def evaluate_rpeak_prediction(self, prediction, labels, signame, prediction_window_size,
-                            ann_locations, annotation_type):
+                            ann_locations):
         fn, fp, tp, tn, correct_preds = self.confusion_matrix(labels, prediction)
         if tp != 0:
             der = ((fp + fn) / tp)
@@ -77,7 +79,7 @@ class Evaluation:
             se = round(se, 3)
         else:
             se = 0
-        file = open("reports/RPeakDetection/" + annotation_type + "_" + str(prediction_window_size) + ".tsv", "a")
+        file = open("reports/RPeakDetection/" + self.DB + "/" + str(prediction_window_size) + ".tsv", "a")
         diff = self.compute_average_diff(correct_preds, ann_locations)
         diff = round(diff, 3)
         file.write("|%s|%s|%s|%s|\n" % (signame, str(der), str(se), str(diff)))

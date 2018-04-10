@@ -20,7 +20,7 @@ for name in sorted(os.listdir("sample/incartdb")):
         new_symbol = np.array(new_symbol)
         wfdb.wrann(name, "atr", new_sample, new_symbol)'''
 file = open("reports/KNN/incartdb/qrsdetection/sliding_onechannel.tsv","r")
-output = open("reports/KNN/incartdb/qrsdetection/rounded.tsv", "w")
+output = open("reports/KNN/incartdb/qrsdetection/sliding_onechannel.tsv", "w")
 for line in file:
     line = line.split("|")
     format_string = "|%s|"

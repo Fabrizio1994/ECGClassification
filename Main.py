@@ -1,4 +1,3 @@
-from KNN import KNN
-
-knn = KNN()
-knn.qrs_detection()
+from Evaluation import Evaluation
+eval = Evaluation()
+eval.validate_r_peak()
