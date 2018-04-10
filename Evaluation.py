@@ -5,50 +5,45 @@ import numpy as np
 
 fe = FeatureExtraction()
 
-
 class Evaluation:
-    SIZE_LAST_20 = 130000
-    SIG_LEN = 650000
-    TEST_INDEX = SIG_LEN - SIZE_LAST_20
+    siglen = 650000
+    test_index = 520000
+    test_size = 130000
+    DB = "mitdb"
 
     # noinspection PyTypeChecker
     def validate_r_peak(self):
         prediction_window_sizes = [10, 20, 50]
         evaluation_window_size = 10
-        annotation_type = ['beat', 'cleaned']
-
-        for name in os.listdir("sample"):
+        for name in sorted(os.listdir("sample/" + self.DB)):
             if name.endswith('.atr'):
                 signame = name.replace(".atr", "")
                 print(signame)
-                for type in annotation_type:
-                    annotation = wfdb.rdann("annotations/" + type + '/'
-                                            + signame, 'atr')
-                    locations = list(filter(lambda x: x > self.TEST_INDEX,
-                                            annotation.sample))
-                    for size in prediction_window_sizes:
-                        prediction = self.__get_predictions(signame, 0, prediction_window_size=size)
-                        labels = self.get_labels(locations, evaluation_window_size)
-                        self.evaluate_rpeak_prediction(prediction, labels, signame, self.SIZE_LAST_20, size,
-                                                       locations, annotation_type=type)
+                annotation = wfdb.rdann("sample/"+ self.DB + "/" +signame, 'atr')
+                self.siglen = wfdb.rdrecord("sample/"+self.DB+"/"+signame).sig_len
+                self.test_index = int(self.siglen/5)*4
+                self.test_size = self.siglen - self.test_index
+                locations = list(filter(lambda x: x > self.test_index, annotation.sample))
+                for window_size in prediction_window_sizes:
+                    prediction = self.get_predictions(signame, 0, prediction_window_size=window_size)
+                    labels = self.get_labels(locations, evaluation_window_size)
+                    self.evaluate_rpeak_prediction(prediction, labels, signame, window_size,locations)
 
-    def __get_predictions(self, signame, n_channel, prediction_window_size,
-                        total_size=SIG_LEN,
-                        test_size=SIZE_LAST_20):
-        record = wfdb.rdrecord('sample/' + signame)
+    def get_predictions(self, signame, n_channel, prediction_window_size):
+        record = wfdb.rdrecord('sample/'+self.DB +"/" + signame)
         channel = []
         for elem in record.p_signal:
             channel.append(elem[n_channel])
         prediction = []
-        file = open("rpeak_output/" + str(signame) + "_" + str(n_channel + 1)
-                    + ".csv", "r")
+        file = open("rpeak_output/" + self.DB + "/" + str(signame) + "_1.csv", "r")
         for line in file:
-            value = int(line.replace("\n", ""))
-            if value > total_size - test_size:
-                real_peak_index = self.__get_r_peak(channel, value, prediction_window_size)
+            zero_crossing = int(line.replace("\n", ""))
+            if zero_crossing >= self.test_index:
+                real_peak_index = self.get_r_peak(channel, zero_crossing, prediction_window_size)
                 prediction.append(real_peak_index)
         return prediction
 
+    #returns the intervals around the annotation locations
     def get_labels(self, locations, evaluation_window_size):
         labels = []
         interval = [q for q in range(int(-evaluation_window_size / 2), int(evaluation_window_size / 2) + 1)]
@@ -56,19 +51,23 @@ class Evaluation:
             labels.append([loc + q for q in interval])
         return labels
 
-    def __get_r_peak(self, channel, value, window_size):
-        indexes = range(int(value - window_size / 2), int(value + window_size / 2 + 1))
-        max = abs(channel[value])
-        rpeak = value
+    def get_r_peak(self, channel, zero_crossing, window_size):
+        # overflow
+        if int(zero_crossing + window_size / 2) >= len(channel):
+            indexes = range(int(zero_crossing - window_size /2), len(channel))
+        else:
+            indexes = range(int(zero_crossing - window_size / 2), int(zero_crossing + window_size / 2 + 1))
+        max = abs(channel[zero_crossing])
+        rpeak = zero_crossing
         for index in indexes:
             if abs(channel[index]) > max:
                 max = channel[index]
                 rpeak = index
         return rpeak
 
-    def evaluate_rpeak_prediction(self, prediction, labels, signame, length, prediction_window_size,
-                            ann_locations, annotation_type):
-        fn, fp, tp, tn, correct_preds = self.__confusion_matrix(length, labels, prediction)
+    def evaluate_rpeak_prediction(self, prediction, labels, signame, prediction_window_size,
+                            ann_locations):
+        fn, fp, tp, tn, correct_preds = self.confusion_matrix(labels, prediction)
         if tp != 0:
             der = ((fp + fn) / tp)
             der = round(der, 3)
@@ -80,12 +79,12 @@ class Evaluation:
             se = round(se, 3)
         else:
             se = 0
-        file = open("reports/RPeakDetection/" + annotation_type + "_" + str(prediction_window_size) + ".tsv", "a")
-        diff = self.__compute_average_diff(correct_preds, ann_locations)
+        file = open("reports/RPeakDetection/" + self.DB + "/" + str(prediction_window_size) + ".tsv", "a")
+        diff = self.compute_average_diff(correct_preds, ann_locations)
         diff = round(diff, 3)
         file.write("|%s|%s|%s|%s|\n" % (signame, str(der), str(se), str(diff)))
 
-    def __confusion_matrix(self, length, labels, prediction):
+    def confusion_matrix(self, labels, prediction):
         TP = 0
         FP = 0
         FN = 0
@@ -104,10 +103,10 @@ class Evaluation:
                     found = True
             if not found:
                 FN += 1
-        TN = length - TP - FP - FN
+        TN = self.test_size - TP - FP - FN
         return FN, FP, TP, TN, correct_preds
 
-    def compute_sensitivity(self, tn, fp, fn, tp, signame, window_size, annotation_type, features_type):
+    def compute_sensitivity(self, fp, fn, tp):
         if tp != 0:
             der = ((fp + fn) / tp)
         else:
@@ -121,13 +120,22 @@ class Evaluation:
         return se
 
     def write_knn_prediction(self, results):
+        # EDIT THIS!!
+        file_path = "reports/KNN/incartdb/qrsdetection/fixed_onechannel.tsv"
+        file = open(file_path, "w")
+        for signal in sorted(results.keys()):
+            # AND THIS ACCORDING TO THE NUMBER OF WINDOW SIZES
+            file.write("|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|\n" % (str(signal), str(results[signal][0]),
+                                                              str(results[signal][1]),
+                                                              str(results[signal][2]),
+                                                              str(results[signal][3]),
+                                                              str(results[signal][4]),
+                                                              str(results[signal][5]),
+                                                              str(results[signal][6]),
+                                                              str(results[signal][7]),
+                                                              str(results[signal][8])))
 
-        file = open('reports/KNN/sliding.tsv', "w")
-        for signal in results:
-            file.write("|%s|%s|%s|%s|\n" % (str(signal), str(results[signal][0]), str(results[signal][1]),
-                                            str(results[signal][2])))
-
-    def __compute_average_diff(self, correct_preds, locations):
+    def compute_average_diff(self, correct_preds, locations):
         count = 0
         sum = 0
         for pred in correct_preds:

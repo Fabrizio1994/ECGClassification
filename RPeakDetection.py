@@ -29,19 +29,22 @@ import os
 import wfdb
 
 class RPeakDetection:
-    def get_command(self, file_name):
-        return "python2 RPeakDetection.py 360  < csv/" + file_name+ " > rpeak_output/" + file_name
+    def get_command(self, file_name, db):
+        return "python2 RPeakDetection.py 360  < csv/" + db + "/" + file_name + " > rpeak_output/"+ db + "/" + file_name
 
-    def run_rpeak(self):
-        for file_name in os.listdir("csv"):
-            os.system(self.get_command(file_name))
+    def run_rpeak(self, db):
+        for file_name in os.listdir("csv/" + db):
+            os.system(self.get_command(file_name, db))
 
-    def prepare_input_files(self, signal_name):
-        file = open("csv/" + signal_name + ".csv", "w")
-        record = wfdb.rdrecord("sample/" + signal_name)
-        for elem in record.p_signal:
-            file.write("%s\n" % (str(elem[0])))
-        file.close()
+    def prepare_input_files(self, db):
+        for name in os.listdir("sample/"+db):
+            if name.endswith(".atr"):
+                name = name.replace(".atr", "")
+                file = open("csv/" + db + "/" + name + ".csv", "w")
+                record = wfdb.rdrecord("sample/"+db+"/" + name)
+                for elem in record.p_signal:
+                    file.write("%s\n" % (str(elem[0])))
+                file.close()
 
 def detect_beats(
         ecg,  # The raw ECG signal
