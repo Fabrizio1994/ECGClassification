@@ -435,6 +435,11 @@ For further information, please see the reference [n°5].
 |233|91.125|92.192|96.411|97.385|98.327|97.678|99.52|98.705|98.697|
 |234|100.0|99.440|99.828|99.642|99.263|99.644|99.621|99.822|99.814|
 
+## Plot of KNN results on MIT-DB
+
+|[KNN-Plot-Results](https://i.imgur.com/n0khJeX.png)
+ 
+
 
 # Signals' annotations
 
