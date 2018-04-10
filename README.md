@@ -166,7 +166,7 @@ For further information, please see the reference [n°5].
 |233|90.645|94.272|97.293|84.426|0.373|
 |234|99.437|98.674|100.0|100.0|0.011|
 
-# Sliding KNN MIT-DB Results
+#### Window Level One Channel
 |patient|SE-10|SE-20|SE-30|SE-50|SE-70|SE-90|SE-110|SE-130|SE-150|
 |-------|-----|-----|-----|-----|-----|-----|------|------|------|
 |100|99.084|99.558|99.560|99.777|99.773|99.772|98.497|99.786|100.0|
@@ -218,7 +218,7 @@ For further information, please see the reference [n°5].
 |233|91.125|92.192|96.411|97.385|98.327|97.678|99.52|98.705|98.697|
 |234|100.0|99.440|99.828|99.642|99.263|99.644|99.621|99.822|99.814|
 
-## Plot of KNN results on MIT-DB
+#### Window Level One Channel Plot
 
 ![KNN-Plot-Results](https://i.imgur.com/n0khJeX.png)
 
@@ -381,11 +381,6 @@ For further information, please see the reference [n°5].
 |I74|92.827|96.603|96.687|98.261|98.28|98.077|98.34|98.975|99.793|
 |I75|92.905|96.591|97.625|99.536|98.627|99.77|99.01|98.804|99.527|
 
-
-
-
-
- 
 ## RPEAK
 ### Incart
 #### window 10
@@ -681,11 +676,6 @@ For further information, please see the reference [n°5].
 |233|7|2230|0|0|831|11|0|0|0|0|0|0|0|0|0|
 |234|0|2700|0|0|3|0|0|0|0|0|0|0|0|50|0|
 
-
-
-# Elapsed time for a single point (patient 100) in seconds
-Knn = ![equation](http://latex.codecogs.com/gif.latex?\frac{50}{650000}&space;=&space;7\cdot{10^{-5}})  
-RPeakDetector = ![equation](http://latex.codecogs.com/gif.latex?\frac{0.26}{650000}&space;=&space;4\cdot{10^{-6}})
 
 ## References 
 * 1) [QRS detection using KNN](https://www.researchgate.net/publication/257736741_QRS_detection_using_K-Nearest_Neighbor_algorithm_KNN_and_evaluation_on_standard_ECG_databases) - Indu Saini, Dilbag Singh, Arun Khosla
