@@ -19,18 +19,18 @@ class Evaluation:
             if name.endswith('.atr'):
                 signame = name.replace(".atr", "")
                 print(signame)
-                annotation = wfdb.rdann("sample/"+ self.DB + "/" +signame, 'atr')
-                self.siglen = wfdb.rdrecord("sample/"+self.DB+"/"+signame).sig_len
+                annotation = wfdb.rdann("sample/" + self.DB + "/" + signame, 'atr')
+                self.siglen = wfdb.rdrecord("sample/" + self.DB + "/" + signame).sig_len
                 self.test_index = int(self.siglen/5)*4
                 self.test_size = self.siglen - self.test_index
                 locations = list(filter(lambda x: x > self.test_index, annotation.sample))
                 for window_size in prediction_window_sizes:
                     prediction = self.get_predictions(signame, 0, prediction_window_size=window_size)
                     labels = self.get_labels(locations, evaluation_window_size)
-                    self.evaluate_rpeak_prediction(prediction, labels, signame, window_size,locations)
+                    self.evaluate_rpeak_prediction(prediction, labels, signame, window_size, locations)
 
     def get_predictions(self, signame, n_channel, prediction_window_size):
-        record = wfdb.rdrecord('sample/'+self.DB +"/" + signame)
+        record = wfdb.rdrecord('sample/'+self.DB + "/" + signame)
         channel = []
         for elem in record.p_signal:
             channel.append(elem[n_channel])
@@ -107,11 +107,6 @@ class Evaluation:
         return FN, FP, TP, TN, correct_preds
 
     def compute_sensitivity(self, fp, fn, tp):
-        if tp != 0:
-            der = ((fp + fn) / tp)
-        else:
-            der = np.infty
-
         if tp + fn != 0:
             se = (tp / (tp + fn)) * 100
         else:

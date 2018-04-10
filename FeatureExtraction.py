@@ -6,8 +6,7 @@ from collections import defaultdict
 class FeatureExtraction:
     channels_map = defaultdict(list)
 
-    def extract_features(self, sample_name, annotation, window_size,
-                         features_type="fixed", channels_ids=[0, 1]):
+    def extract_features(self, sample_name, annotation, window_size, channels_ids=[0, 1]):
         self.channels_map.clear()
         print("Extracting features for signal " + sample_name + "...")
         record = wfdb.rdrecord(sample_name)
@@ -16,23 +15,8 @@ class FeatureExtraction:
                 self.channels_map[id].append(elem[id])
         for channel in self.channels_map:
             self.channels_map[channel] = self.__normalized_gradient(self.__passband_filter(self.channels_map[channel]))
-        if features_type == "sliding":
-            return self.compute_sliding_features(annotation, window_size)
-        return self.compute_fixed_features(annotation, window_size)
 
-    def compute_fixed_features(self, annotation, window_size):
-        features = []
-        siglen = len(self.channels_map[0])
-        for i in range(siglen):
-            features.append([self.channels_map[channel_id][i] for channel_id in self.channels_map.keys()])
-        samples = annotation.sample
-        labels = [-1] * siglen
-        for j in range(len(samples)):
-            annotated_index = j
-            qrs_region = self.__get_qrs_region(samples, annotated_index, window_size, siglen)
-            for sample in qrs_region:
-                labels[sample] = 1
-        return np.asarray(features), np.asarray(labels)
+        return self.compute_sliding_features(annotation, window_size)
 
     def compute_sliding_features(self, annotation, window_size):
         samples = annotation.sample

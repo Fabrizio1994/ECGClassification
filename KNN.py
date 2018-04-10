@@ -14,8 +14,6 @@ class KNN:
     # modify the method write_knn_predictions according to the lenght of this array
     WINDOW_SIZES = [10, 20, 30, 50, 70, 90, 110, 130, 150]
     EVALUATION_WINDOW_SIZE = 10
-    # train fixed and sliding separately
-    FEATURE_TYPE = 'fixed'
     DB = "incartdb"
     # train one and two channels separately
     CHANNEL_IDS = [0]
@@ -29,7 +27,6 @@ class KNN:
                 for size in self.WINDOW_SIZES:
                     annotation = wfdb.rdann(path, 'atr')
                     train_features, train_labels = fe.extract_features(path, annotation, size,
-                                                                       features_type=self.FEATURE_TYPE,
                                                                        channels_ids=self.CHANNEL_IDS)
                     # signal first channel. Needed for extracting peaks from predicted regions
                     signal = fe.channels_map[0]
@@ -54,11 +51,10 @@ class KNN:
                 for size in self.WINDOW_SIZES:
                     annotation = wfdb.rdann(path, 'atr')
                     train_features, train_labels = fe.extract_features(path, annotation, size,
-                                                                       features_type=self.FEATURE_TYPE,
                                                                        channels_ids=self.CHANNEL_IDS)
                     tn, fp, fn, tp = gs.qrs_gridsearch(train_features, train_labels)
                     se = eval.compute_sensitivity(fp, fn, tp)
-                    results[name].append(round(se,3))
+                    results[name].append(round(se, 3))
         eval.write_knn_prediction(results)
 
 
