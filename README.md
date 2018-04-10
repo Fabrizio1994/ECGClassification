@@ -385,6 +385,11 @@ For further information, please see the reference [n°5].
 |I74|92.827|96.603|96.687|98.261|98.28|98.077|98.34|98.975|99.793|
 |I75|92.905|96.591|97.625|99.536|98.627|99.77|99.01|98.804|99.527|
 
+#### Sample Level One Channel Plot
+
+![KNN-Plot-Results](https://i.imgur.com/nsuduUT.png)
+
+
 ## RPEAK
 ### Incart
 #### window 10
