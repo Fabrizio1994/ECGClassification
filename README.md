@@ -788,6 +788,12 @@ For further information, please see the reference [n°5].
 |I74|0.342|85.398|0.521|
 |I75|0.86|69.928|1.249|
 
+### Comparisons
+|DB|Av-Se-10|Av-Se-20|Av-Se-50|
+|-|-|-|-|
+|Incart|79,186|56,002|49,504|
+|MIT|90,189|76,021|67,232|
+
 
 
 # Signals' annotations
