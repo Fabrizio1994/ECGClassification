@@ -437,7 +437,7 @@ For further information, please see the reference [n°5].
 
 ## Plot of KNN results on MIT-DB
 
-|[KNN-Plot-Results](https://i.imgur.com/n0khJeX.png)
+![KNN-Plot-Results](https://i.imgur.com/n0khJeX.png)
  
 
 
