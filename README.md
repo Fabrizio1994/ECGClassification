@@ -220,7 +220,7 @@ For further information, please see the reference [n°5].
 
 #### Window Level One Channel Plot
 
-![KNN-Plot-Results](https://i.imgur.com/LwgVC2O.png)
+![KNN-Plot-Results](https://i.imgur.com/3OwZ6Jl.png)
 
 ### Incart Database
 #### Window Level One Channel
