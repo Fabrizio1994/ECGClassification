@@ -2,8 +2,6 @@ import wfdb
 import numpy as np
 
 ann_path = "../data/sample/mitdb"
-PR_interval = 70
-RT_interval = 200
 
 
 class FeatureExtraction:

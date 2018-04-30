@@ -1,28 +1,30 @@
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
 
 
 ############################################
 
 class SVCGridSearch():
     def __init__(self, X_train, y_train, X_test):
-        svc = SVC()
+        svc = LinearSVC()
 
         params = {
-            'kernel': ['linear'],
             'C': [10, 1, 0.1, 0.01, 0.001, 0.0001, 0.00001],
-            'class_weight' : ['balanced']
+            'class_weight': ['balanced']
         }
+
         classifier = svc
         grid_search = GridSearchCV(classifier,
                                    params,
-                                   scoring="recall_weighted",
-                                   cv=5,
+                                   scoring=metrics.make_scorer(metrics.accuracy_score),
+                                   cv=22,
                                    n_jobs=-1,
                                    verbose=10)
 
         grid_search.fit(X_train, y_train)
+
+
         ## Print results for each combination of parameters.
         number_of_candidates = len(grid_search.cv_results_['params'])
         print("Results:")
