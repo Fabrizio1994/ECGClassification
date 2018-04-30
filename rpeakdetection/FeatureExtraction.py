@@ -6,7 +6,7 @@ from collections import defaultdict
 class FeatureExtraction:
     channels_map = defaultdict(list)
 
-    def extract_features(self, sample_name, annotation, window_size, channels_ids=[0, 1]):
+    def extract_features(self, sample_name, samples, window_size, channels_ids=[0, 1]):
         self.channels_map.clear()
         print("Extracting features for signal " + sample_name + "...")
         record = wfdb.rdrecord(sample_name)
@@ -16,10 +16,9 @@ class FeatureExtraction:
         for channel in self.channels_map:
             self.channels_map[channel] = self.__normalized_gradient(self.__passband_filter(self.channels_map[channel]))
 
-        return self.compute_sliding_features(annotation, window_size)
+        return self.compute_sliding_features(samples, window_size)
 
-    def compute_sliding_features(self, annotation, window_size):
-        samples = annotation.sample
+    def compute_sliding_features(self, samples, window_size):
         features = []
         labels = []
         i = 0
@@ -38,19 +37,6 @@ class FeatureExtraction:
                 labels.append(-1)
             i += window_size
         return np.asarray(features), np.asarray(labels)
-
-    def __get_qrs_region(self, samples, annotated_index, window_size, siglen):
-        boundary = int(window_size/2)
-        if samples[annotated_index] < siglen - boundary:
-            if samples[annotated_index] - boundary > 0:
-                return [q for q in range(samples[annotated_index] - boundary +1 ,
-                                         samples[annotated_index] + boundary + 1)]
-            else:
-                return [q for q in range(samples[annotated_index] + boundary + 1)]
-        else:
-            gap = siglen - samples[annotated_index]
-            return [q for q in range(samples[annotated_index] - boundary,
-                                     samples[annotated_index] + gap)]
 
     def __normalized_gradient(self, channel):
         gradient = np.diff(channel)

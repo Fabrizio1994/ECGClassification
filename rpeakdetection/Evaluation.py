@@ -1,5 +1,5 @@
 import os
-from FeatureExtraction import FeatureExtraction
+from rpeakdetection.FeatureExtraction import FeatureExtraction
 import wfdb
 import numpy as np
 
@@ -13,7 +13,7 @@ class Evaluation:
 
     # noinspection PyTypeChecker
     def validate_r_peak(self):
-        prediction_window_sizes = [10, 20, 50]
+        prediction_window_sizes = [10]
         evaluation_window_size = 10
         for name in sorted(os.listdir("sample/" + self.DB)):
             if name.endswith('.atr'):
@@ -65,9 +65,8 @@ class Evaluation:
                 rpeak = index
         return rpeak
 
-    def evaluate_rpeak_prediction(self, prediction, labels, signame, prediction_window_size,
-                            ann_locations):
-        fn, fp, tp, tn, correct_preds = self.confusion_matrix(labels, prediction)
+    def evaluate_rpeak_prediction(self, peaks, intervals, signame, prediction_window_size, ann_locations):
+        fn, fp, tp, tn, correct_preds = self.confusion_matrix(intervals, peaks)
         if tp != 0:
             der = ((fp + fn) / tp)
             der = round(der, 3)
@@ -79,12 +78,14 @@ class Evaluation:
             se = round(se, 3)
         else:
             se = 0
-        file = open("reports/RPeakDetection/" + self.DB + "/" + str(prediction_window_size) + ".tsv", "a")
+        sens_file = open("20-50.tsv","a")
         diff = self.compute_average_diff(correct_preds, ann_locations)
         diff = round(diff, 3)
-        file.write("|%s|%s|%s|%s|\n" % (signame, str(der), str(se), str(diff)))
+        sens_file.write("|%s|%s|%s|%s|\n" % (signame, str(der), str(se), str(diff)))
 
     def confusion_matrix(self, labels, prediction):
+        # prediction = peaks
+        # labels = intervals of evaluation_window_size around the annotation
         TP = 0
         FP = 0
         FN = 0
@@ -114,21 +115,6 @@ class Evaluation:
 
         return se
 
-    def write_knn_prediction(self, results):
-        # EDIT THIS!!
-        file_path = "reports/KNN/incartdb/qrsdetection/fixed_onechannel.tsv"
-        file = open(file_path, "w")
-        for signal in sorted(results.keys()):
-            # AND THIS ACCORDING TO THE NUMBER OF WINDOW SIZES
-            file.write("|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|\n" % (str(signal), str(results[signal][0]),
-                                                              str(results[signal][1]),
-                                                              str(results[signal][2]),
-                                                              str(results[signal][3]),
-                                                              str(results[signal][4]),
-                                                              str(results[signal][5]),
-                                                              str(results[signal][6]),
-                                                              str(results[signal][7]),
-                                                              str(results[signal][8])))
 
     def compute_average_diff(self, correct_preds, locations):
         count = 0

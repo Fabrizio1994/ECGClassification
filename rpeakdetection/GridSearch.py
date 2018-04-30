@@ -17,9 +17,9 @@ class GridSearch:
         classifier = KNeighborsClassifier()
 
         parameters = {
-            'n_neighbors': [1, 3, 5, 7, 9, 11],
-            'weights': ['uniform', 'distance'],
-            'p': [1, 2]
+            'n_neighbors': [ 11],
+            'weights': [ 'distance'],
+            'p': [ 2]
         }
 
         grid_search = GridSearchCV(classifier,
@@ -29,10 +29,10 @@ class GridSearch:
                                    n_jobs=-1,
                                    verbose=10)
         grid_search.fit(X_train, Y_train)
-        Y_predicted = grid_search.predict(X_test)
-        return Y_test, Y_predicted
+        self.predicted = grid_search.predict(X_test)
+        return self.confusion_matrix(Y_test, self.predicted)
 
-    def qrs_confusion_matrix(self, Y_test, Y_predicted):
+    def confusion_matrix(self, Y_test, Y_predicted):
         confusion = metrics.confusion_matrix(Y_test, Y_predicted)
         return confusion[0][0], confusion[0][1], confusion[1][0], confusion[1][1]
 
