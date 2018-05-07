@@ -17,7 +17,7 @@ class SVCGridSearch():
         classifier = svc
         grid_search = GridSearchCV(classifier,
                                    params,
-                                   scoring=metrics.make_scorer(metrics.accuracy_score),
+                                   scoring="recall_weighted",
                                    cv=22,
                                    n_jobs=-1,
                                    verbose=10)
