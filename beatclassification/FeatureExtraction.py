@@ -67,20 +67,21 @@ class FeatureExtraction:
         peaks = annotation.sample
         return signal, peaks, symbols
 
-    # takes a window of [-75,75] around the Rpeak
+    # takes a window of [-90,+90] around the Rpeak
     # TODO: does it require filtering?
     def signal_cumulants(self, signal, feature):
-        lags = [15, 30, 45, 60, 75, 105, 120, 135, 150, 165]
+        poses = [15, 30, 45, 60, 75, 105, 120, 135, 150, 165]
+        lag = 7
         second = []
         third = []
         fourth =[]
-        for lag in lags:
-            window = signal[:lag]
-            cumulant_sample = stats.kstat(window, 2)
-            second.append(cumulant_sample)
-            cumulant_sample = stats.kstat(window, 3)
+        for pose in poses:
+            window = signal[pose - lag : pose + lag]
+            # cumulant_sample = np.var(window)
+            # second.append(cumulant_sample)
+            cumulant_sample = stats.skew(window)
             third.append(cumulant_sample)
-            cumulant_sample = stats.kstat(window, 4)
+            cumulant_sample = stats.kurtosis(window)
             fourth.append(cumulant_sample)
         feature.extend(second)
         feature.extend(third)
