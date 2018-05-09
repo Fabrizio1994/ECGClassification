@@ -11,39 +11,19 @@ class Evaluation:
     test_size = 130000
     DB = "mitdb"
 
-    # noinspection PyTypeChecker
-    def validate_r_peak(self):
-        prediction_window_sizes = [10]
+    # a prediction inside a range of size=evaluation_window_size is considered TP
+    def validate_r_peak(self, prediction, output_file):
         evaluation_window_size = 10
-        for name in sorted(os.listdir("sample/" + self.DB)):
+        for name in sorted(os.listdir("data/sample/" + self.DB)):
             if name.endswith('.atr'):
                 signame = name.replace(".atr", "")
                 print(signame)
-                annotation = wfdb.rdann("sample/" + self.DB + "/" + signame, 'atr')
-                self.siglen = wfdb.rdrecord("sample/" + self.DB + "/" + signame).sig_len
-                self.test_index = int(self.siglen/5)*4
-                self.test_size = self.siglen - self.test_index
-                locations = list(filter(lambda x: x > self.test_index, annotation.sample))
-                for window_size in prediction_window_sizes:
-                    prediction = self.get_predictions(signame, 0, prediction_window_size=window_size)
-                    labels = self.get_labels(locations, evaluation_window_size)
-                    self.evaluate_rpeak_prediction(prediction, labels, signame, window_size, locations)
+                annotation = wfdb.rdann("data/sample/" + self.DB + "/" + signame, 'atr')
+                locations = annotation.sample
+                labels = self.get_labels(locations, evaluation_window_size)
+                self.evaluate_rpeak_prediction(prediction, labels, signame, locations, output_file)
 
-    def get_predictions(self, signame, n_channel, prediction_window_size):
-        record = wfdb.rdrecord('sample/'+self.DB + "/" + signame)
-        channel = []
-        for elem in record.p_signal:
-            channel.append(elem[n_channel])
-        prediction = []
-        file = open("rpeak_output/" + self.DB + "/" + str(signame) + "_1.csv", "r")
-        for line in file:
-            zero_crossing = int(line.replace("\n", ""))
-            if zero_crossing >= self.test_index:
-                real_peak_index = self.get_r_peak(channel, zero_crossing, prediction_window_size)
-                prediction.append(real_peak_index)
-        return prediction
-
-    #returns the intervals around the annotation locations
+    # returns the intervals around the annotation locations
     def get_labels(self, locations, evaluation_window_size):
         labels = []
         interval = [q for q in range(int(-evaluation_window_size / 2), int(evaluation_window_size / 2) + 1)]
@@ -51,21 +31,7 @@ class Evaluation:
             labels.append([loc + q for q in interval])
         return labels
 
-    def get_r_peak(self, channel, zero_crossing, window_size):
-        # overflow
-        if int(zero_crossing + window_size / 2) >= len(channel):
-            indexes = range(int(zero_crossing - window_size /2), len(channel))
-        else:
-            indexes = range(int(zero_crossing - window_size / 2), int(zero_crossing + window_size / 2 + 1))
-        max = abs(channel[zero_crossing])
-        rpeak = zero_crossing
-        for index in indexes:
-            if abs(channel[index]) > max:
-                max = channel[index]
-                rpeak = index
-        return rpeak
-
-    def evaluate_rpeak_prediction(self, peaks, intervals, signame, prediction_window_size, ann_locations):
+    def evaluate_rpeak_prediction(self, peaks, intervals, signame, ann_locations, output_file):
         fn, fp, tp, tn, correct_preds = self.confusion_matrix(intervals, peaks)
         if tp != 0:
             der = ((fp + fn) / tp)
@@ -78,7 +44,7 @@ class Evaluation:
             se = round(se, 3)
         else:
             se = 0
-        sens_file = open("20-50.tsv","a")
+        sens_file = open(output_file,"a")
         diff = self.compute_average_diff(correct_preds, ann_locations)
         diff = round(diff, 3)
         sens_file.write("|%s|%s|%s|%s|\n" % (signame, str(der), str(se), str(diff)))

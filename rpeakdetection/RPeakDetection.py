@@ -28,23 +28,63 @@ import time
 import os
 import wfdb
 
+# zero_crossings_folder = "rpeakdetection/output/RPeakDetector/mitdb/zero_crossings"
+# peaks_folder= "rpeakdetection/output/RPeakDetector/mitdb/peaks"
 class RPeakDetection:
-    def get_command(self, file_name, db):
-        return "python2 RPeakDetection.py 360  < csv/" + db + "/" + file_name + " > rpeak_output/"+ db + "/" + file_name
+    def get_command(self, file_name, db, output_folder):
+        return "python2 rpeakdetection/RPeakDetection.py 360  < data/rpeak_detector_input/" + db + "/" + file_name + " >" \
+               + output_folder + "/" + file_name
 
-    def run_rpeak(self, db):
-        for file_name in os.listdir("csv/" + db):
-            os.system(self.get_command(file_name, db))
+    def run_rpeak(self, db, zero_crossings_folder, peaks_folder):
+        for file_name in os.listdir("data/rpeak_detector_input/" + db):
+            os.system(self.get_command(file_name, db, zero_crossings_folder))
+            if file_name.endswith("_1.csv"):
+                signame = file_name.replace("_1.csv", "")
+                prediction = self.get_prediction(db, signame, zero_crossings_folder)
+                self.write_output(peaks_folder, signame, prediction)
+
+    def write_output(self, peaks_folder, signame, prediction):
+        file = open(peaks_folder + "/" + signame, "w")
+        for pred in prediction:
+            file.write("%s\n" % str(pred))
 
     def prepare_input_files(self, db):
         for name in os.listdir("sample/"+db):
             if name.endswith(".atr"):
                 name = name.replace(".atr", "")
-                file = open("csv/" + db + "/" + name + ".csv", "w")
-                record = wfdb.rdrecord("sample/"+db+"/" + name)
+                file = open("data/rpeak_detector_input/" + db + "/" + name + ".csv", "w")
+                record = wfdb.rdrecord("data/sample/"+db+"/" + name)
                 for elem in record.p_signal:
                     file.write("%s\n" % (str(elem[0])))
                 file.close()
+
+    def get_prediction(self, DB, signame, zero_crossings_folder):
+        record = wfdb.rdrecord('data/sample/' + DB + "/" + signame)
+        channel = []
+        for elem in record.p_signal:
+            channel.append(elem[0])
+        prediction = []
+        file = open(zero_crossings_folder + "/" + str(signame) + "_1.csv", "r")
+        for line in file:
+            zero_crossing = int(line.replace("\n", ""))
+            peak_index = self.peak(channel, zero_crossing)
+            prediction.append(peak_index)
+        return prediction
+
+    def peak(self, channel, zero_crossing):
+        # overflow
+        window_size = 50
+        if int(zero_crossing + window_size / 2) >= len(channel):
+            indexes = range(int(zero_crossing - window_size /2), len(channel))
+        else:
+            indexes = range(int(zero_crossing - window_size / 2), int(zero_crossing + window_size / 2 + 1))
+        max = abs(channel[zero_crossing])
+        rpeak = zero_crossing
+        for index in indexes:
+            if abs(channel[index]) > max:
+                max = channel[index]
+                rpeak = index
+        return rpeak
 
 def detect_beats(
         ecg,  # The raw ECG signal

@@ -76,13 +76,17 @@ class FeatureExtraction:
         third = []
         fourth =[]
         for pose in poses:
-            window = signal[pose - lag : pose + lag]
-            # cumulant_sample = np.var(window)
-            # second.append(cumulant_sample)
+            window = signal[pose - lag:pose + lag]
+            cumulant_sample = np.var(window)
+            second.append(cumulant_sample)
             cumulant_sample = stats.skew(window)
             third.append(cumulant_sample)
             cumulant_sample = stats.kurtosis(window)
             fourth.append(cumulant_sample)
+        # normalization step
+        np.divide(second, np.sqrt(sum(np.square(second))))
+        np.divide(third, np.sqrt(sum(np.square(third))))
+        np.divide(fourth, np.sqrt(sum(np.square(fourth))))
         feature.extend(second)
         feature.extend(third)
         feature.extend(fourth)
