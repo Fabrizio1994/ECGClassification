@@ -13,4 +13,4 @@ x_train, y_train = fe.extract(train_dataset)
 x_test, y_test = fe.extract(test_dataset)
 # fit method
 svc = SVCGridSearch(x_train, y_train, x_test)
-se = me.evaluate(y_test, svc.y_predicted, fe.label2class)
+se = me.evaluate(y_test, svc.y_predicted)

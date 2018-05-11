@@ -70,8 +70,8 @@ class FeatureExtraction:
     # takes a window of [-90,+90] around the Rpeak
     # TODO: does it require filtering?
     def signal_cumulants(self, signal, feature):
-        poses = [15, 30, 45, 60, 75, 105, 120, 135, 150, 165]
-        lag = 7
+        poses = [30, 60, 90, 120, 150]
+        lag = 15
         second = []
         third = []
         fourth =[]
@@ -81,7 +81,7 @@ class FeatureExtraction:
             second.append(cumulant_sample)
             cumulant_sample = stats.skew(window)
             third.append(cumulant_sample)
-            cumulant_sample = stats.kurtosis(window)
+            cumulant_sample = stats.kurtosis(window, fisher=False)
             fourth.append(cumulant_sample)
         # normalization step
         np.divide(second, np.sqrt(sum(np.square(second))))
