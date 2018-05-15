@@ -786,9 +786,19 @@ For further information, please see the reference [n°5].
 |PAN-TOMPKINS|87%|37%|36%|100%|
 
 ## PRECISION
-### 100 series
-
+ ### 100 series
+|-|N|PVC|VF|BII|
+|-|-|---|--|---|
+|RPEAK|99%|34%|-|0%|
+|ANNOTATION|99%|46%|-|-|
+|PAN-TOMPKINS|98%|20%|0%|0%|
 ### 200 series
+
+|-|N|PVC|VF|BII|
+|-|-|---|--|---|
+|RPEAK|92%|26%|25%|0.2%|
+|ANNOTATION|98%|55%|50%|0.25%|
+|PAN-TOMPKINS|92%|25%|40%|0.2%|
 
 ## Beat Classification
 ### Weighted SVM
