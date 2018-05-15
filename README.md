@@ -768,6 +768,30 @@ For further information, please see the reference [n°5].
 |234|0|2700|0|0|3|0|0|0|0|0|0|0|0|50|0|
 
 
+
+# RR RESULTS
+## SENSITIVITY
+### 100 series
+|-|N|PVC|VF|BII|
+|-|-|---|--|---|
+|RPEAK|98%|62%|-|-|
+|ANNOTATION|99%|85%|-|-|
+|PAN-TOMPKINS|90%|41%|-|-|
+
+### 200 series
+|-|N|PVC|VF|BII|
+|-|-|---|--|---|
+|RPEAK|88%|35%|1%|100%|
+|ANNOTATION|93%|74%|51%|100%|
+|PAN-TOMPKINS|87%|37%|36%|100%|
+
+## PRECISION
+### 100 series
+
+### 200 series
+
+
+
 ## References 
 * 1) [QRS detection using KNN](https://www.researchgate.net/publication/257736741_QRS_detection_using_K-Nearest_Neighbor_algorithm_KNN_and_evaluation_on_standard_ECG_databases) - Indu Saini, Dilbag Singh, Arun Khosla
 * 2) [MIT-BIH Arrhythmia Database](https://pdfs.semanticscholar.org/072a/0db716fb6f8332323f076b71554716a7271c.pdf) - Moody GB, Mark RG. The impact of the MIT-BIH Arrhythmia Database. IEEE Eng in Med and Biol 20(3):45-50 (May-June 2001). (PMID: 11446209)
