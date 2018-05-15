@@ -793,7 +793,7 @@ For further information, please see the reference [n°5].
 ## Beat Classification
 ### Weighted SVM
 |-|N|S|V|F|Average|
-|-|-|-|-|-|
+|-|-|-|-|-|-|
 |Population|44202|1835|3204|388|-|
 |Accuracy|0.951|0.952|0.967|0.992|0.965|
 |Sensitivity|0.983|0.212|0.704|0.237|0.534|
