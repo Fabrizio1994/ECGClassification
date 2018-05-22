@@ -25,7 +25,7 @@ class FeatureExtraction:
             self.label2class[count] = classe
             count += 1
 
-    def extract(self, names):
+    def extract(self, names, one_hot=False):
         features = []
         labels = []
         for name in names:
@@ -44,6 +44,10 @@ class FeatureExtraction:
                     features.append(feature)
                     classe = self.symbol2class[symbol]
                     label = self.class2label[classe]
+                    if one_hot:
+                        hot_lab = np.zeros(len(self.class2label), dtype=np.int8)
+                        hot_lab[label] = 1
+                        label = hot_lab
                     labels.append(label)
         return np.array(features), np.array(labels)
 
