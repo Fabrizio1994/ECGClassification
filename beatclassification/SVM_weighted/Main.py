@@ -1,7 +1,8 @@
 from beatclassification.FeatureExtraction import FeatureExtraction
 from beatclassification.SVCGridSearch import SVCGridSearch
-from beatclassification.MulticlassEvaluation import MulticlassEvaluation
-from beatclassification.SoftmaxRegression import SoftmaxRegression
+
+from beatclassification.SVM_weighted.MulticlassEvaluation import MulticlassEvaluation
+
 fe = FeatureExtraction()
 me = MulticlassEvaluation()
 supraventricular_db = [i for i in range(800,813)]
