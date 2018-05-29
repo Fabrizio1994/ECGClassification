@@ -1,6 +1,7 @@
 import wfdb
 import os
 from beatclassification.LabelsExtraction import LabelsExtraction
+from pandas_ml import ConfusionMatrix
 
 
 class Evaluation:
@@ -77,6 +78,8 @@ class Evaluation:
         non_beat_annotation = ['x', '(', ')', 'p', 't', 'u', '`', "'", '^', '|', '~', 's', 'T', '*', 'D', '=', '"',
                                '@', '+']
 
+        #TODO: Remember to remove '+' from non beat annotations in order to capture BII
+
         annotations = list(filter(lambda x: x not in non_beat_annotation, annotations))
         for k in range(len(annotations)):
             if annotations[k] in ['[', '!', ']']:
@@ -89,7 +92,7 @@ class Evaluation:
                 cleaned_annotations.append('N')
                 continue
 
-        return cleaned_annotations[2:len(cleaned_annotations)]
+        return cleaned_annotations[2:len(cleaned_annotations) - 1]
 
     """
     
@@ -107,13 +110,13 @@ class Evaluation:
     def eval_rr_intervals(self, database, approach):
 
         le = LabelsExtraction()
-        annotations = le.extract('data/peaks/pantompkins/mitdb', True)
+        annotations = le.extract('../data/peaks/pantompkins/mitdb', True)
         category = {'PVC': ['V'],
                     'VF': ['[', '!', ']'],
                     'BII': ['BII'],
                     'N': ['N']}
-        sensitivity_file = open('data/results/' + database + '/' + approach + '_sensitivity.tsv', 'a')
-        precision_file = open('data/results/' + database + '/' + approach + '_precision.tsv', 'a')
+        sensitivity_file = open('../../data/results/' + database + '/' + approach + '_sensitivity.tsv', 'a')
+        precision_file = open('../../data/results/' + database + '/' + approach + '_precision.tsv', 'a')
         sensitivity_file.write("|patient|")
         precision_file.write("|patient|")
         for cat in sorted(category.keys()):
@@ -121,12 +124,12 @@ class Evaluation:
             precision_file.write("%s|" % cat)
         sensitivity_file.write("\n")
         precision_file.write("\n")
-        names_file = open('data/names.txt', 'r')
+        names_file = open('../../data/names.txt', 'r')
         for line in names_file:
             predictions = []
             patient_name = line.replace('\n', '')
             #annotations = wfdb.rdann('database/' + database + '/original_annotations/' + patient, 'atr')
-            file = open('data/labels/' + approach + '/' + database + '/' + patient_name + '.tsv', 'r')
+            file = open('../../data/labels/' + approach + '/' + database + '/' + patient_name + '.tsv', 'r')
             for value in file:
                 predictions.append(value.replace('\n', ''))
             evaluation_map = self.initialize_map(category)
