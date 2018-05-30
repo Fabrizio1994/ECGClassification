@@ -21,10 +21,10 @@ class SignalCleaning:
         return non_beat_ann, non_beat_sym
 
     def remove_non_beat_for_all(self):
-        for signal_name in os.listdir("sample"):
+        for signal_name in os.listdir("data/sample/mitdb"):
             if signal_name.endswith(".atr"):
                 name = signal_name.replace(".atr", "")
-                new_ann, new_symbol = self.remove_non_beat("sample/" + name)
+                new_ann, new_symbol = self.remove_non_beat("data/sample/mitdb/" + name)
                 wfdb.wrann(name, "atr", np.asarray(new_ann), np.asarray(new_symbol))
                 #os.system("mv " + signal_name + " annotations/beat")
 
