@@ -1,14 +1,14 @@
-from beatclassification.FeatureExtraction import FeatureExtraction
-from beatclassification.SVCGridSearch import SVCGridSearch
+from beatclassification.SVM_weighted.FeatureExtraction import FeatureExtraction
+from beatclassification.SVM_weighted.SVCGridSearch import SVCGridSearch
 
 from beatclassification.SVM_weighted.MulticlassEvaluation import MulticlassEvaluation
 
 fe = FeatureExtraction()
 me = MulticlassEvaluation()
-supraventricular_db = [i for i in range(800,813)]
+#supraventricular_db = [i for i in range(800,813)]
 train_dataset = ["101", "106", "108","109", "112", "114", "115", "116", "118", "119", "122", "124", "201", "203",
                  "205", "207", "208", "209", "215", "220", "223", "230"]
-train_dataset.extend([str(e) for e in supraventricular_db])
+#train_dataset.extend([str(e) for e in supraventricular_db])
 test_dataset = ["100", "103", "105", "111", "113", "117", "121", "123", "200", "202", "210", "212", "213","214", "219",
                 "221", "222", "228", "231", "232", "233", "234"]
 

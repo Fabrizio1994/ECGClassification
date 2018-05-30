@@ -1,16 +1,18 @@
 import wfdb
 import numpy as np
 from scipy import stats
+from beatclassification.LabelsExtraction import LabelsExtraction
 
-ann_path = "../data/sample/mitdb"
-
+peaks_path = "../data/peaks/pantompkins/mitdb"
+ann_path = "../data/sample/mitdb/"
+le = LabelsExtraction()
 
 class FeatureExtraction:
     def __init__(self):
         # classes of beats
         self.classes = ["N", "S", "V", "F"]
         # physiobank symbols for beats
-        self.symbols = ["N", "L", "R", "e", "J", "A", "a", "J", "S", "V", "E", "F"]
+        self.mitdb_symbols = ["N", "L", "R", "e", "J", "A", "a", "J", "S", "V", "E", "F"]
         # associates symbols to classes of beats
         self.symbol2class = {"N": "N", "L": "N", "R": "N", "e": "N", "j": "N",
                              "A": "S", "a": "S", "J": "S", "S": "S",
@@ -19,23 +21,28 @@ class FeatureExtraction:
         # label is the integer value associated to a class
         self.class2label = {}
         self.label2class = {}
+
         count = 0
         for classe in self.classes:
             self.class2label[classe] = count
             self.label2class[count] = classe
             count += 1
 
-    def extract(self, names, one_hot=False):
+    def extract(self, names, one_hot=False, read_annot=False):
+        # extract labels of peaks from rpeakdetector
+        if not read_annot:
+            # dict -> signame2symbols
+            self.symbols = le.extract(peaks_path)
         features = []
         labels = []
         for name in names:
             print(name)
-            signal, peaks, symbols = self.read_data(name)
+            signal, peaks, symbols = self.read_data(name, read_annot)
             rr_intervals = np.diff(peaks)
             rr_mean = np.mean(rr_intervals)
             for count in range(5, len(symbols)-5):
                 symbol = symbols[count]
-                if symbol in self.symbols:
+                if symbol in self.mitdb_symbols:
                     feature = []
                     self.rr_features(count, feature, rr_intervals, rr_mean)
                     peak = peaks[count]
@@ -61,14 +68,18 @@ class FeatureExtraction:
         feature.extend([prev, next, win_mean])
         feature.extend(prev_3)
 
-    def read_data(self, name):
-        annotation = wfdb.rdann(ann_path + "/" + name, "atr")
+    def read_data(self, name, read_annot):
         record = wfdb.rdrecord(ann_path + "/" + name)
         signal = []
         for elem in record.p_signal:
             signal.append(elem[0])
-        symbols = annotation.symbol
-        peaks = annotation.sample
+        if read_annot:
+            annotation = wfdb.rdann(ann_path + "/" + name, "atr")
+            symbols = annotation.symbol
+            peaks = annotation.sample
+        else:
+            symbols = self.symbols[name]
+            peaks = self.read_peaks(peaks_path, name)
         return signal, peaks, symbols
 
     # takes a window of [-90,+90] around the Rpeak
@@ -97,3 +108,9 @@ class FeatureExtraction:
         return feature
 
 
+    def read_peaks(self, peaks_path, name):
+        file = open(peaks_path + "/" + name + ".tsv")
+        peaks = []
+        for line in file:
+            peaks.append(int(line.replace("\n","")))
+        return peaks
