@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 class RNN:
-    def __init__(self, X_train, X_test, Y_train, Y_test):
+    def predict(self, X_train, X_test, Y_train, Y_test, labels_counter):
         element_size = 2;time_steps = 340;num_classes = 4
         batch_size = 128;hidden_layer_size = 128
 
@@ -20,7 +20,6 @@ class RNN:
         def get_linear_layer(vector):
             return tf.matmul(vector, Wl) + bl
 
-
         last_rnn_output = outputs[:, -1, :]
         final_output = get_linear_layer(last_rnn_output)
 
@@ -35,7 +34,9 @@ class RNN:
 
         i = 0
         while i< X_train.shape[0] - batch_size:
-            print(str(i/ batch_size)+"of "+ str(X_train.shape[0] / batch_size))
+            iter_number = int(i/ batch_size)
+            total_number = int(X_train.shape[0] / batch_size)
+            print(str(iter_number)+" of "+ str(total_number))
             batch_x= X_train[i:i+batch_size]
             batch_y= Y_train[i:i+batch_size]
             batch_x = batch_x.reshape((batch_size, time_steps, element_size))
@@ -46,23 +47,26 @@ class RNN:
                                                     y: batch_y})
                 loss = sess.run(cross_entropy, feed_dict={_inputs: batch_x,
                                                       y: batch_y})
-                print ("Iter " + str(i) + ", Minibatch Loss=  {:.6f}".format(loss) + ", Training Accuracy= " 
+                print ("Iter " + str(iter_number) + ", Minibatch Loss=  {:.6f}".format(loss) + ", Training Accuracy= " 
                    "{:.5f}".format(acc))
             i += batch_size
         print("Test step:")
         i = 0
-        accuracies = []
+        predictions = []
         while i < X_test.shape[0] - batch_size:
-            print(str(i / batch_size) + "of " + str(X_test.shape[0] / batch_size))
+            iter_number = int(i / batch_size)
+            total_number = int(X_test.shape[0] / batch_size)
+            print(str(iter_number) + " of " + str(total_number))
             batch_x = X_test[i:i + batch_size]
             batch_y = Y_test[i:i + batch_size]
             batch_x = batch_x.reshape((batch_size, time_steps, element_size))
             acc = sess.run(accuracy, feed_dict={_inputs: batch_x,
                                             y: batch_y})
-            loss = sess.run(cross_entropy, feed_dict={_inputs: batch_x,
+            loss, pred = sess.run([cross_entropy,final_output], feed_dict={_inputs: batch_x,
                                                       y: batch_y})
             print("Iter " + str(i) + ", Minibatch Loss=  {:.6f}".format(loss) + ", Training Accuracy= "
                                                                               "{:.5f}".format(acc))
-            accuracies.append(acc)
+            predictions.append(pred)
             i += batch_size
-        print ("Testing Accuracy:" + str(np.mean(accuracies)))
+        return predictions
+        #print ("Testing Accuracy:" + str(np.mean(accuracies)))

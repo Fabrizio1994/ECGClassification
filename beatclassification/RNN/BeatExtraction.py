@@ -7,13 +7,15 @@ train_dataset = ["101", "106", "108","109", "112", "114", "115", "116", "118", "
                  "205", "207", "208", "209", "215", "220", "223", "230"]
 test_dataset = ["100", "103", "105", "111", "113", "117", "121", "123", "200", "202", "210", "212", "213","214", "219",
                 "221", "222", "228", "231", "232", "233", "234"]
-
+window_size = 3
 
 class BeatExtraction:
     def extract(self):
         print("Extracting Beats:")
         X_train = self.extract_db(train_dataset)
         X_test = self.extract_db(test_dataset)
+        X_train = self.compute_windows(X_train)
+        X_test = self.compute_windows(X_test)
         return X_train, X_test
 
     def read_peaks(self, path):
@@ -39,14 +41,21 @@ class BeatExtraction:
             # extract signals from record
             signal = self.extract_signal(record)
             peaks = [int(v) for v in self.read_peaks(peaks_path + name + ".tsv")]
-            # REMOVE FIRST AND LAST BEAT
+            # REMOVE FIRST AND LAST BEAT due to underflow and overflow
             for peak in peaks[1:-1]:
                 beat = []
                 beat.append(signal[0][peak - int(BEAT_SIZE / 2):peak + int(BEAT_SIZE / 2)])
                 beat.append(signal[1][peak - int(BEAT_SIZE / 2):peak + int(BEAT_SIZE / 2)])
+                beat = [item for sublist in beat for item in sublist]
                 X.append(beat)
-        X = np.array(X)
         return X
+
+    def compute_windows(self, X):
+        windows = []
+        for j in range(len(X) - 2):
+            beat = [X[j], X[j + 1], X[j + 2]]
+            windows.append(beat)
+        return np.array(windows)
 
 if __name__ == '__main__':
     be = BeatExtraction()
