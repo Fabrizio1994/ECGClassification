@@ -1,10 +1,15 @@
 from beatclassification.RNN.BeatExtraction import BeatExtraction
 from beatclassification.LabelsExtraction import LabelsExtraction
 from beatclassification.RNN.RNN import RNN
+from beatclassification.keras.LSTM import LSTM_NN
 import numpy as np
+from collections import defaultdict
+from sklearn.utils.class_weight import compute_class_weight
 
 be = BeatExtraction()
 le = LabelsExtraction()
+lstm = LSTM_NN()
+window_size = 3
 
 
 peaks_dir = "../data/peaks/pantompkins/mitdb"
@@ -18,6 +23,7 @@ symbol2class = {"N": "N", "L": "N", "R": "N", "e": "N", "j": "N",
                      "A": "S", "a": "S", "J": "S", "S": "S",
                      "V": "V", "E": "V",
                      "F": "F"}
+weights = defaultdict(int)
 
 
 # considers any symbol that is not in this focus of study as 'N'
@@ -36,6 +42,7 @@ def one_hot_labels(name, all_symbols):
     for index in range(len(labels)):
         one_hot = [0] * 4
         label = labels[index]
+        weights[label] += 1
         one_hot[label] = 1
         labels[index] = one_hot
     return labels
@@ -54,20 +61,27 @@ Y_test = []
 
 for name in train_dataset:
     labels = one_hot_labels(name, all_symbols)
-    # REMOVE FIRST AND LAST LABEL
+    # REMOVE FIRST AND LAST LABEL because of the overflow and underflow due to the window around the peak
     Y_train.append(labels[1:-1])
 
 for name in test_dataset:
     labels = one_hot_labels(name, all_symbols)
     Y_test.append(labels[1:-1])
 
-Y_train = np.array([item for sublist in Y_train for item in sublist])
-Y_test = np.array([item for sublist in Y_test for item in sublist])
+# all signals labels are flattened in one vector
+# first and last labels are excluded due to window size
+Y_train = np.array([item for sublist in Y_train for item in sublist])[1:-1]
+Y_test = np.array([item for sublist in Y_test for item in sublist])[1:-1]
+
+# predictions = rnn.predict(X_train, X_test, Y_train, Y_test, labels_counter)
+for label in weights:
+    weights[label] = (1 / weights[label])
+# labels not in one-hot format
+
 print(X_train.shape)
 print(Y_train.shape)
 print(X_test.shape)
 print(Y_test.shape)
 
-rnn = RNN(X_train, X_test, Y_train, Y_test)
-
+lstm.predict(X_train, Y_train, X_test, Y_test, weights)
 

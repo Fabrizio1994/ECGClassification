@@ -6,7 +6,7 @@ from bisect import bisect_left
 class LabelsExtraction:
 
     def extract(self, rpeak_output_dir, include_vf=False):
-
+        print("Extracting labels:")
         labels = defaultdict(list)
         names_file = open("../../data/names.txt", "r")
         for line in names_file:
@@ -23,8 +23,6 @@ class LabelsExtraction:
             for line in input_samples_file:
                 sample_location = line.replace('\n', '')
                 input_samples.append(int(sample_location))
-            closest = -1
-
             for input in input_samples:
                 '''min = np.inf
                 for ann_index in range(len(ann_samples)):
@@ -40,11 +38,11 @@ class LabelsExtraction:
                 closest = self.take_closest(ann_samples, input)
                 if closest == len(ann_samples):
                     output_labels.append(ann_symbols[closest - 1])
-                    break
-                if ann_samples[closest] == ann_samples[-1]:
+                else:
                     output_labels.append(ann_symbols[closest])
-                    break
-                output_labels.append(ann_symbols[closest])
+                '''if ann_samples[closest] == ann_samples[-1]:
+                                  output_labels.append(ann_symbols[closest])
+                                  break'''
             labels[name] = output_labels
         return labels
 
