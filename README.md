@@ -1,4 +1,4 @@
-# QRS detection using K-Nearest Neighbor algorithm (KNN) and evaluation on standard ECG databases
+# Arrhythmia detection using on standard ECG databases
 
 ## Dependencies
 The modules are implemented for use with Python 3.x and they consist of the following dependencies:
@@ -18,9 +18,9 @@ The QRS complex is the central part of an ECG. It corresponds to the depolarizat
 The normal ECG signal consists of P, QRS and T waves. The QRS interval is a measure of the total duration of ventricular tissue depolarization.  
 QRS detection provides the fundamental reference for almost all automated ECG analysis algorithms. Before to perform QRS detection, removal or suppresion of noise is required. 
 
-## MIT-BIH Arrhythmia Database
+### MIT-BIH Arrhythmia Database
 The MIT-BIH Arrhytmia DB contains 48 half-hour excerpts of two-channel ambulatory ECG recordings, obtained from 47 subjects (records 201 and 202 are from the same subject) studied by the BIH Arrhythmia Laboratory between 1975 and 1979. Of these, 23 were chosen at random from a collection of over 4000 Holter tapes, and the other 25 (the "200 series") were selected to include examples of uncommon but clinically important arrhythmias that would not be well represented in a small random sample.  
-Each signal contains cardiologists annotations, which describe the behaviour of the signal in the location in which they are placed. In particular, the Beat Annotations classify each QRS complex with one of the following labels:
+Each signal contains cardiologists annotations, which describe the behaviour of the signal in the location in which they are placed. In particular, the Beat Annotations classify 
 
 ### Annotations 
 |    Beat Annotation     |            Meaning             |
@@ -47,19 +47,69 @@ Each signal contains cardiologists annotations, which describe the behaviour of 
 
 For the other kind of annotations, which do not refer to QRS region, look at the references.
 
-## QRS and R peak detection
-The aim of this work is to describe different approaches for encountering the problems of QRS and R peak detection, and evaluating and comparing the results obtained using the same standard ECG databases.  
-In order to do this, we used two different algorithms: one based on the KNN classifier and the other based on a heuristic method.
+#### MIT-BIH ANNOTATIONS
+|patient|A|N|E|S|V|F|R|j|f|/|a|L|e|J|Q|
+|-------|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+|100|33|2239|0|0|1|0|0|0|0|0|0|0|0|0|0|
+|101|3|1860|0|0|0|0|0|0|0|0|0|0|0|0|2|
+|102|0|99|0|0|4|0|0|0|56|2028|0|0|0|0|0|
+|103|2|2082|0|0|0|0|0|0|0|0|0|0|0|0|0|
+|104|0|163|0|0|2|0|0|0|666|1380|0|0|0|0|18|
+|105|0|2526|0|0|41|0|0|0|0|0|0|0|0|0|5|
+|106|0|1507|0|0|520|0|0|0|0|0|0|0|0|0|0|
+|107|0|0|0|0|59|0|0|0|0|2078|0|0|0|0|0|
+|108|4|1739|0|0|17|2|0|1|0|0|0|0|0|0|0|
+|109|0|0|0|0|38|2|0|0|0|0|0|2492|0|0|0|
+|111|0|0|0|0|1|0|0|0|0|0|0|2123|0|0|0|
+|112|2|2537|0|0|0|0|0|0|0|0|0|0|0|0|0|
+|113|0|1789|0|0|0|0|0|0|0|0|6|0|0|0|0|
+|114|10|1820|0|0|43|4|0|0|0|0|0|0|0|2|0|
+|115|0|1953|0|0|0|0|0|0|0|0|0|0|0|0|0|
+|116|1|2302|0|0|109|0|0|0|0|0|0|0|0|0|0|
+|117|1|1534|0|0|0|0|0|0|0|0|0|0|0|0|0|
+|118|96|0|0|0|16|0|2166|0|0|0|0|0|0|0|0|
+|119|0|1543|0|0|444|0|0|0|0|0|0|0|0|0|0|
+|121|1|1861|0|0|1|0|0|0|0|0|0|0|0|0|0|
+|122|0|2476|0|0|0|0|0|0|0|0|0|0|0|0|0|
+|123|0|1515|0|0|3|0|0|0|0|0|0|0|0|0|0|
+|124|2|0|0|0|47|5|1531|5|0|0|0|0|0|29|0|
+|200|30|1743|0|0|826|2|0|0|0|0|0|0|0|0|0|
+|201|30|1625|0|0|198|2|0|10|0|0|97|0|0|1|0|
+|202|36|2061|0|0|19|1|0|0|0|0|19|0|0|0|0|
+|203|0|2529|0|0|444|1|0|0|0|0|2|0|0|0|4|
+|205|3|2571|0|0|71|11|0|0|0|0|0|0|0|0|0|
+|207|107|0|105|0|105|0|86|0|0|0|0|1457|0|0|0|
+|208|0|1586|0|2|992|373|0|0|0|0|0|0|0|0|2|
+|209|383|2621|0|0|1|0|0|0|0|0|0|0|0|0|0|
+|210|0|2423|1|0|194|10|0|0|0|0|22|0|0|0|0|
+|212|0|923|0|0|0|0|1825|0|0|0|0|0|0|0|0|
+|213|0|3251|0|0|0|0|0|0|0|0|0|0|0|0|0|
+|214|0|0|0|0|256|1|0|0|0|0|0|2003|0|0|2|
+|215|3|3195|0|0|164|1|0|0|0|0|0|0|0|0|0|
+|217|0|244|0|0|162|0|0|0|260|1542|0|0|0|0|0|
+|219|7|2082|0|0|64|1|0|0|0|0|0|0|0|0|0|
+|220|94|1954|0|0|0|0|0|0|0|0|0|0|0|0|0|
+|221|0|2031|0|0|396|0|0|0|0|0|0|0|0|0|0|
+|222|208|2062|0|0|0|0|0|212|0|0|0|0|0|1|0|
+|223|72|2029|0|0|473|14|0|0|0|0|1|0|16|0|0|
+|228|3|1688|0|0|362|0|0|0|0|0|0|0|0|0|0|
+|230|0|2255|0|0|1|0|0|0|0|0|0|0|0|0|0|
+|231|1|314|0|0|2|0|1254|0|0|0|0|0|0|0|0|
+|232|1382|0|0|0|0|0|397|1|0|0|0|0|0|0|0|
+|233|7|2230|0|0|831|11|0|0|0|0|0|0|0|0|0|
+|234|0|2700|0|0|3|0|0|0|0|0|0|0|0|50|0|
 
-## Data Loading 
-Data are available in the PhysioNet website, precisely at the link below:  
-https://www.physionet.org/physiobank/database/mitdb/  
-Raw signals are loaded inside the Python module using the wfdb library.
+### QRS and R peak detection
+The first phase we have to work on is to describe different approaches for encountering the problems of QRS and R peak detection, and evaluating and comparing the results obtained using the same standard ECG databases.  
+In order to do this, we used three different algorithms: 
+- one based on the KNN classifier
+- one based on a heuristic method
+- one based on the PanTompkins approach
 
 ```
 pip install wfdb
 ```
-## KNN APPROACHES
+# KNN APPROACH
 ## Signal Preprocessing
 Before the classification phase, signals are processed by using a band pass filter, in order to reduce the recording noise that would lead to uncorrect classifications.  
 The sample frequency is set to 360 sample per second.  
@@ -75,6 +125,11 @@ filtered_channel = filtfilt(b, a, x)
 where b and a are the coefficients we computed above and x is the array of data to be filtered.  
 Once we filtered the channels, we apply the gradient to the whole signal with the diff function from numpy. It actually calculates the n-th discrete difference along the given axis. After this, we just square the signal to get no zeros and eventually, we normalize the gradient.
 
+
+## Data Loading 
+Data are available in the PhysioNet website, precisely at the link below:  
+https://www.physionet.org/physiobank/database/mitdb/  
+Raw signals are loaded inside the Python module using the wfdb library.
 
 ## Classification
 In this scope, the QRS detection problem is encountered as a binary classification problem:  
@@ -92,80 +147,30 @@ parameters = {
 The Grid Search provides, for eache signal, the best configuration of parameters according to the accuracy score.  
 http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html for further readings.
 
-
-
-### Feature Extraction
+## Feature Extraction
 We executed the above procedure and stored the results obtained defining features in two different ways: at sample level and at window level.
-#### Sample level
+
+### Sample level
 As suggested in the paper [QRS detection using KNN], each feature is a 2D vector containing the gradient values for a given sample, one for each channel. The feature matrix shape is then 650.000 X 2.  
 Each feature is labeled with 1 or -1 whether it is located in a range, called window, of variable size around a Beat Annotation. We stored the results obtained with windows of size 10, 20 and 50 samples.
 
-#### Window level
+### Window level
 In this approach, the signal is divided in windows of samples of fixed sizes (again 10, 20 and 50 samples), which are considered as features. The feature vector is composed by the gradients referred to all samples in the window.  
 A window is labeled as QRS region if contains a Beat Annotation.
-## RPEAK DETECTION HEURISTIC
 
-### Signal Processing
+# RPEAK DETECTION HEURISTIC
+
+## Signal Processing
 Also here, the filter chosen is a passband since they maximize the energy of different QRS complexes and reduce the effect of P/T waves, motion artifacts and muscle noise. After filtering, a first-order forward differentiation is applied to emphasize large slope and high-frequency content of the QRS complex. The derivative operation reduces the effect of large P/T waves. A rectification process is then employed to obtain a positive-valued signal that eliminates detection problems in case of negative QRS complexes. In this approach, a new nonlinear transformation based on squaring, thresholding process and Shannon energy transformation is designed to avoid to misconsider some R-peak. 
 
-For further information, please see the reference [n°5]. 
+For further information, please see the references. 
 
+# Pan Tompkins Approach
 
-## EVALUATION
-### MIT-BIH Arrythmia Database
+In order to get all the peaks of each signal we used a matlab version of the algorithm wrote by Pan-Tompkins which you can find in the repository. It takes the signals as input and give a list containing the peaks' location as output.
 
-#### Window Level 2 Channels
-|SIGNAL|SE_10|SE_20|SE_50|RPEAK-SE|DIFF|
-|-|-|-|-|-|-|
-|100|99.041|99.332|99.129|99.563|0.037|
-|101|97.222|98.67|99.128|100.0|0.0|
-|102|94.118|94.432|97.882|93.593|0.386|
-|103|99.231|98.423|98.778|100.0|0.0|
-|104|95.117|94.471|98.693|97.753|0.124|
-|105|94.499|96.238|99.43|98.485|0.087|
-|106|88.915|93.97|96.296|85.854|0.182|
-|107|95.422|97.789|97.393|54.545|3.359|
-|108|82.095|84.225|92.398|43.386|1.287|
-|109|95.714|97.287|98.077|97.804|0.224|
-|111|96.061|98.485|98.481|97.025|0.255|
-|112|98.156|98.394|98.403|42.339|3.667|
-|113|99.716|99.104|99.204|99.731|0.0|
-|114|97.436|98.254|98.638|94.588|1.299|
-|115|98.507|99.483|100.0|99.742|0.078|
-|116|97.737|99.596|98.542|99.599|0.533|
-|117|90.26|96.98|98.107|99.032|2.775|
-|118|97.327|99.553|99.107|92.357|2.692|
-|119|99.261|99.495|99.744|99.747|0.018|
-|121|96.802|98.232|99.444|42.118|1.05|
-|122|97.6|99.22|99.797|100.0|0.103|
-|123|98.955|99.701|99.67|100.0|0.259|
-|124|96.53|98.671|99.029|99.714|0.014|
-|200|92.593|95.602|97.037|97.963|0.439|
-|201|95.98|96.306|97.8|96.026|0.08|
-|202|97.356|98.259|98.578|99.825|0.039|
-|203|85.275|91.181|96.239|86.092|0.352|
-|205|97.605|98.864|99.282|98.0|0.098|
-|207|92.011|91.369|96.533|81.21|1.365|
-|208|92.308|95.269|97.35|70.848|0.155|
-|209|97.329|98.635|99.317|100.0|0.051|
-|210|96.296|96.196|97.688|95.238|0.058|
-|212|99.257|98.947|99.29|99.81|0.053|
-|213|96.148|97.118|98.438|99.058|0.035|
-|214|97.577|97.059|98.698|99.342|0.053|
-|215|98.426|99.096|99.559|97.301|0.063|
-|217|93.096|97.183|96.889|42.691|3.565|
-|219|99.302|98.109|99.314|100.0|0.002|
-|220|99.281|99.239|99.757|100.0|0.0|
-|221|97.951|97.921|99.387|99.566|0.011|
-|222|97.125|97.053|99.398|98.942|0.453|
-|223|94.559|97.243|98.643|94.423|0.193|
-|228|93.187|96.737|98.313|88.702|0.407|
-|230|98.113|98.416|99.576|96.933|0.017|
-|231|99.363|98.75|99.342|100.0|0.0|
-|232|97.581|99.722|99.202|99.449|0.166|
-|233|90.645|94.272|97.293|84.426|0.373|
-|234|99.437|98.674|100.0|100.0|0.011|
-
+# EVALUATION
+## MIT-BIH Arrythmia Database
 #### Window Level One Channel
 |patient|SE-10|SE-20|SE-30|SE-50|SE-70|SE-90|SE-110|SE-130|SE-150|SE-170|SE-190|SE-210|
 |-------|-----|-----|-----|-----|-----|-----|------|------|------|------|------|------|
@@ -218,12 +223,10 @@ For further information, please see the reference [n°5].
 |233|91.125|92.192|96.411|97.385|98.327|97.678|99.52|98.705|98.697|99.331|99.472|99.298|
 |234|100.0|99.440|99.828|99.642|99.263|99.644|99.621|99.822|99.814|99.815|99.815|99.815|
 
-#### Window Level One Channel Plot
-
 ![KNN-Plot-Results](https://i.imgur.com/3OwZ6Jl.png)
 
-### Incart Database
-#### Window Level One Channel
+## Incart Database
+### Window Level One Channel
 |SIGNAL|SE-10|SE-20|SE-30|SE-50|SE-70|SE-90|SE-110|SE-130|SE-150|
 |-|-|-|-|-|-|-|-|-|-|
 |I01|79.596|86.453|90.038|94.086|95.109|96.409|98.022|98.545|98.682|
@@ -302,14 +305,11 @@ For further information, please see the reference [n°5].
 |I74|92.827|96.603|96.687|98.261|98.28|98.077|98.34|98.975|99.793|
 |I75|92.905|96.591|97.625|99.536|98.627|99.77|99.01|98.804|99.527|
 
-#### Window Level One Channel Plot
-
 ![KNN-Plot-Results](https://i.imgur.com/bN1eEqT.png)
 
-
-## RPEAK
-### MIT-BIH Arrythmia Database
-#### Window 10
+# RPEAK HEURISTIC
+## MIT-BIH Arrythmia Database
+### Window 10
 |SIGNAL|DER|SE|DIFF|
 |-|-|-|-|
 |100|0.007|99.563|0.586|
@@ -361,7 +361,7 @@ For further information, please see the reference [n°5].
 |233|0.154|92.787|0.931|
 |234|0.0|100.0|0.204|
 
-#### Window 20
+### Window 20
 |SIGNAL|DER|SE|DIFF|
 |-|-|-|-|
 |100|0.02|98.908|0.616|
@@ -413,7 +413,7 @@ For further information, please see the reference [n°5].
 |233|0.116|94.426|0.523|
 |234|0.007|99.63|0.204|
 
-#### Window 50
+### Window 50
 |SIGNAL|DER|SE|DIFF|
 |-|-|-|-|
 |100|0.02|98.908|0.616|
@@ -465,10 +465,8 @@ For further information, please see the reference [n°5].
 |233|0.685|74.426|0.311|
 |234|0.019|99.074|0.202|
 
-
-
-### Incart
-#### Window 10
+## Incart
+### Window 10
 |SIGNAL|DER|SE|DIFF|
 |-|-|-|-|
 |I01|0.383|77.264|2.593|
@@ -705,69 +703,11 @@ For further information, please see the reference [n°5].
 |I74|0.342|85.398|0.521|
 |I75|0.86|69.928|1.249|
 
-### Comparisons
+#### Comparisons
 |DB|Av-Se-10|Av-Se-20|Av-Se-50|
 |-|-|-|-|
 |Incart|79,186|56,002|49,504|
 |MIT|90,189|76,021|67,232|
-
-
-
-# Signals' annotations
-
-
-|patient|A|N|E|S|V|F|R|j|f|/|a|L|e|J|Q|
-|-------|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
-|100|33|2239|0|0|1|0|0|0|0|0|0|0|0|0|0|
-|101|3|1860|0|0|0|0|0|0|0|0|0|0|0|0|2|
-|102|0|99|0|0|4|0|0|0|56|2028|0|0|0|0|0|
-|103|2|2082|0|0|0|0|0|0|0|0|0|0|0|0|0|
-|104|0|163|0|0|2|0|0|0|666|1380|0|0|0|0|18|
-|105|0|2526|0|0|41|0|0|0|0|0|0|0|0|0|5|
-|106|0|1507|0|0|520|0|0|0|0|0|0|0|0|0|0|
-|107|0|0|0|0|59|0|0|0|0|2078|0|0|0|0|0|
-|108|4|1739|0|0|17|2|0|1|0|0|0|0|0|0|0|
-|109|0|0|0|0|38|2|0|0|0|0|0|2492|0|0|0|
-|111|0|0|0|0|1|0|0|0|0|0|0|2123|0|0|0|
-|112|2|2537|0|0|0|0|0|0|0|0|0|0|0|0|0|
-|113|0|1789|0|0|0|0|0|0|0|0|6|0|0|0|0|
-|114|10|1820|0|0|43|4|0|0|0|0|0|0|0|2|0|
-|115|0|1953|0|0|0|0|0|0|0|0|0|0|0|0|0|
-|116|1|2302|0|0|109|0|0|0|0|0|0|0|0|0|0|
-|117|1|1534|0|0|0|0|0|0|0|0|0|0|0|0|0|
-|118|96|0|0|0|16|0|2166|0|0|0|0|0|0|0|0|
-|119|0|1543|0|0|444|0|0|0|0|0|0|0|0|0|0|
-|121|1|1861|0|0|1|0|0|0|0|0|0|0|0|0|0|
-|122|0|2476|0|0|0|0|0|0|0|0|0|0|0|0|0|
-|123|0|1515|0|0|3|0|0|0|0|0|0|0|0|0|0|
-|124|2|0|0|0|47|5|1531|5|0|0|0|0|0|29|0|
-|200|30|1743|0|0|826|2|0|0|0|0|0|0|0|0|0|
-|201|30|1625|0|0|198|2|0|10|0|0|97|0|0|1|0|
-|202|36|2061|0|0|19|1|0|0|0|0|19|0|0|0|0|
-|203|0|2529|0|0|444|1|0|0|0|0|2|0|0|0|4|
-|205|3|2571|0|0|71|11|0|0|0|0|0|0|0|0|0|
-|207|107|0|105|0|105|0|86|0|0|0|0|1457|0|0|0|
-|208|0|1586|0|2|992|373|0|0|0|0|0|0|0|0|2|
-|209|383|2621|0|0|1|0|0|0|0|0|0|0|0|0|0|
-|210|0|2423|1|0|194|10|0|0|0|0|22|0|0|0|0|
-|212|0|923|0|0|0|0|1825|0|0|0|0|0|0|0|0|
-|213|0|3251|0|0|0|0|0|0|0|0|0|0|0|0|0|
-|214|0|0|0|0|256|1|0|0|0|0|0|2003|0|0|2|
-|215|3|3195|0|0|164|1|0|0|0|0|0|0|0|0|0|
-|217|0|244|0|0|162|0|0|0|260|1542|0|0|0|0|0|
-|219|7|2082|0|0|64|1|0|0|0|0|0|0|0|0|0|
-|220|94|1954|0|0|0|0|0|0|0|0|0|0|0|0|0|
-|221|0|2031|0|0|396|0|0|0|0|0|0|0|0|0|0|
-|222|208|2062|0|0|0|0|0|212|0|0|0|0|0|1|0|
-|223|72|2029|0|0|473|14|0|0|0|0|1|0|16|0|0|
-|228|3|1688|0|0|362|0|0|0|0|0|0|0|0|0|0|
-|230|0|2255|0|0|1|0|0|0|0|0|0|0|0|0|0|
-|231|1|314|0|0|2|0|1254|0|0|0|0|0|0|0|0|
-|232|1382|0|0|0|0|0|397|1|0|0|0|0|0|0|0|
-|233|7|2230|0|0|831|11|0|0|0|0|0|0|0|0|0|
-|234|0|2700|0|0|3|0|0|0|0|0|0|0|0|50|0|
-
-
 
 # RR RESULTS
 ## SENSITIVITY
