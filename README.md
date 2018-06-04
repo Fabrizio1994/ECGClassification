@@ -20,7 +20,10 @@ QRS detection provides the fundamental reference for almost all automated ECG an
 
 ### MIT-BIH Arrhythmia Database
 The MIT-BIH Arrhytmia DB contains 48 half-hour excerpts of two-channel ambulatory ECG recordings, obtained from 47 subjects (records 201 and 202 are from the same subject) studied by the BIH Arrhythmia Laboratory between 1975 and 1979. Of these, 23 were chosen at random from a collection of over 4000 Holter tapes, and the other 25 (the "200 series") were selected to include examples of uncommon but clinically important arrhythmias that would not be well represented in a small random sample.  
-Each signal contains cardiologists annotations, which describe the behaviour of the signal in the location in which they are placed. In particular, the Beat Annotations classify 
+Each signal contains cardiologists annotations, which describe the behaviour of the signal in the location in which they are placed. 
+
+### Incart Database
+This database consists of 75 annotated recordings extracted from 32 Holter records. Each record is 30 minutes long and contains 12 standard leads, each sampled at 257 Hz. Each signal contains cardiologists annotations, which describe the behaviour of the signal in the location in which they are placed. The algorithm generally places beat annotations in the middle of the QRS complex (as determined from all 12 leads). The locations have not been manually corrected, however, and there may be occasional misaligned annotations as a result.
 
 ### Annotations 
 |    Beat Annotation     |            Meaning             |
@@ -709,6 +712,9 @@ In order to get all the peaks of each signal we used a matlab version of the alg
 |Incart|79,186|56,002|49,504|
 |MIT|90,189|76,021|67,232|
 
+# RR ANALYSIS FOR BEAT CLASSIFICATION
+Going on we have to classify the peaks we located with the approaches described above. For this purpose we decided to use a rule based approach described by Tsipouras. The paper we took into account can be found in the references at the end of this readme. Once we labeled the beats, we went on labeling the RR intervals and the results can be found below. Following the rules written in the paper we can finally detect Arrhythmias.
+
 # RR RESULTS
 ## SENSITIVITY
 ### 100 series
@@ -749,12 +755,15 @@ In order to get all the peaks of each signal we used a matlab version of the alg
 |Sensitivity|0.983|0.212|0.704|0.237|0.534|
 |Precision|0.963|0.291|0.761|0.434|0.61|
 
+# Neural Network Approach
+
+
 ## References 
 * 1) [QRS detection using KNN](https://www.researchgate.net/publication/257736741_QRS_detection_using_K-Nearest_Neighbor_algorithm_KNN_and_evaluation_on_standard_ECG_databases) - Indu Saini, Dilbag Singh, Arun Khosla
 * 2) [MIT-BIH Arrhythmia Database](https://pdfs.semanticscholar.org/072a/0db716fb6f8332323f076b71554716a7271c.pdf) - Moody GB, Mark RG. The impact of the MIT-BIH Arrhythmia Database. IEEE Eng in Med and Biol 20(3):45-50 (May-June 2001). (PMID: 11446209)
 * 3) [Components of a New Research Resource for Complex Physiologic Signals.](http://circ.ahajournals.org/content/101/23/e215.full) - Goldberger AL, Amaral LAN, Glass L, Hausdorff JM, Ivanov PCh, Mark RG, Mietus JE, Moody GB, Peng C-K, Stanley HE. PhysioBank, PhysioToolkit, and PhysioNet. 
 * 4) [WFDB Usages](https://github.com/MIT-LCP/wfdb-python) 
 * 5) [QRS complex Detection Algorithm](https://github.com/tru-hy/rpeakdetect/tree/master)
-
+* 6) [Arrhthmya Classification](https://www.sciencedirect.com/science/article/pii/S0933365704000806)
 
 
