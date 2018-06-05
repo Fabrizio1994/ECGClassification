@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 
-class SignalCleaning:
+class Utility:
 
     NON_BEAT_ANN = [ '[', '!', ']', 'x', '(', ')', 'p', 't', 'u', '`', '\'', '^', '|', '~', '+', 's', 'T', '*', 'D', '='
         , '"', '@']
@@ -20,20 +20,22 @@ class SignalCleaning:
                 non_beat_sym.append(symbols[j])
         return non_beat_ann, non_beat_sym
 
-    def remove_non_beat_for_all(self):
-        for signal_name in os.listdir("data/sample/mitdb"):
+    def remove_non_beat_for_all(self, signals_dir):
+        for signal_name in os.listdir(signals_dir):
             if signal_name.endswith(".atr"):
                 name = signal_name.replace(".atr", "")
-                new_ann, new_symbol = self.remove_non_beat("data/sample/mitdb/" + name)
+                new_ann, new_symbol = self.remove_non_beat(signals_dir + name)
                 wfdb.wrann(name, "atr", np.asarray(new_ann), np.asarray(new_symbol))
-                #os.system("mv " + signal_name + " annotations/beat")
 
-    #returns an updated record object (useful for plotting)
-    def overwrite_signal(self, first_channel, second_channel, record):
-        for i in range(len(record.p_signal)):
-            record.p_signal[i][0] = first_channel[i]
-            record.p_signal[i][1] = second_channel[i]
-        return record
+    def download_dataset(self, URL, names_path):
+        names_file = open(names_path, "r")
+        for line in names_file:
+            name = line.replace("\n", "")
+            os.system("curl -L " + URL + name + ".hea >> " + name + ".hea")
+            os.system("curl -L " + URL + name + ".dat >> " + name + ".dat")
+            os.system("curl -L " + URL + name + ".atr >> " + name + ".atr")
+
+
 
 
 
