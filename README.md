@@ -748,8 +748,8 @@ Going on we have to classify the peaks we located with the approaches described 
 
 ## Beat Classification
 ### Weighted SVM
-rebalanced dataset, with scale factors [-14, 4, 1, 10]
-C = 0.1
+
+
 |-|N|S|V|F|Average|
 |-|-|-|-|-|-|
 |Recall|0.795|0.688|0.829|0.928|0.81|
