@@ -1,13 +1,14 @@
 import wfdb
 import numpy as np
 
-peaks_path = "../../data/peaks/pantompkins/mitdb/"
+peaks_path = "../../../data/peaks/annotations/"
 BEAT_SIZE = 340
 train_dataset = ["101", "106", "108","109", "112", "114", "115", "116", "118", "119", "122", "124", "201", "203",
                  "205", "207", "208", "209", "215", "220", "223", "230"]
 test_dataset = ["100", "103", "105", "111", "113", "117", "121", "123", "200", "202", "210", "212", "213","214", "219",
                 "221", "222", "228", "231", "232", "233", "234"]
 window_size = 3
+
 
 class BeatExtraction:
     def extract(self):
@@ -25,7 +26,6 @@ class BeatExtraction:
             values.append(line.replace("\n", ""))
         return values
 
-
     def extract_signal(self, record):
         signal = [[],[]]
         for elem in record.p_signal:
@@ -37,7 +37,7 @@ class BeatExtraction:
         X = []
         for name in database:
             print(name)
-            record = wfdb.rdrecord("../../data/sample/mitdb/" + name)
+            record = wfdb.rdrecord("../../../data/sample/mitdb/" + name)
             # extract signals from record
             signal = self.extract_signal(record)
             peaks = [int(v) for v in self.read_peaks(peaks_path + name + ".tsv")]
@@ -45,20 +45,14 @@ class BeatExtraction:
             for peak in peaks[1:-1]:
                 beat = []
                 beat.append(signal[0][peak - int(BEAT_SIZE / 2):peak + int(BEAT_SIZE / 2)])
-                beat.append(signal[1][peak - int(BEAT_SIZE / 2):peak + int(BEAT_SIZE / 2)])
+                #beat.append(signal[1][peak - int(BEAT_SIZE / 2):peak + int(BEAT_SIZE / 2)])
                 beat = [item for sublist in beat for item in sublist]
                 X.append(beat)
         return X
 
     def compute_windows(self, X):
         windows = []
-        for j in range(len(X) - 2):
-            beat = [X[j], X[j + 1], X[j + 2]]
+        for q in range(len(X) - window_size + 1):
+            beat = [X[q] for q in range(q, q + window_size)]
             windows.append(beat)
         return np.array(windows)
-
-if __name__ == '__main__':
-    be = BeatExtraction()
-    X_train, X_test = be.extract()
-    print(X_train.shape)
-    print(X_test.shape)
