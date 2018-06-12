@@ -756,7 +756,8 @@ Going on we have to classify the peaks we located with the approaches described 
 |Precision|0.985|0.318|0.878|0.05|0.55|
 
 Average Accuracy: 0.795
-
+rebalanced dataset, with scale factors [-14, 4, 1, 10]
+C = 0.1
 # Neural Network Approach
 
 
