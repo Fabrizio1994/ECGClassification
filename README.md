@@ -748,12 +748,14 @@ Going on we have to classify the peaks we located with the approaches described 
 
 ## Beat Classification
 ### Weighted SVM
+rebalanced dataset, with scale factors [-14, 4, 1, 10]
+C = 0.1
 |-|N|S|V|F|Average|
 |-|-|-|-|-|-|
-|Population|44202|1835|3204|388|-|
-|Accuracy|0.951|0.952|0.967|0.992|0.965|
-|Sensitivity|0.983|0.212|0.704|0.237|0.534|
-|Precision|0.963|0.291|0.761|0.434|0.61|
+|Recall|0.795|0.688|0.829|0.928|0.81|
+|Precision|0.985|0.318|0.878|0.05|0.55|
+
+Average Accuracy: 0.795
 
 # Neural Network Approach
 
