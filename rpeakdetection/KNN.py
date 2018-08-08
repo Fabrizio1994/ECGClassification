@@ -17,10 +17,10 @@ class KNN:
     CHANNEL_IDS = [0]
 
     def rpeak_detection(self):
-        for name in sorted(os.listdir("sample/" + self.DB)):
+        for name in sorted(os.listdir("ecg/" + self.DB)):
             if name.endswith('.atr'):
                 name = name.replace(".atr", "")
-                path = ("sample/"+self.DB+"/"+name)
+                path = ("ecg/"+self.DB+"/"+name)
                 for size in self.WINDOW_SIZES:
                     annotation = wfdb.rdann(path, 'atr')
                     train_features, train_labels = fe.extract_features(path, annotation.sample, size,
