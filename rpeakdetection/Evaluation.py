@@ -14,11 +14,11 @@ class Evaluation:
     # a prediction inside a range of size=evaluation_window_size is considered TP
     def validate_r_peak(self, prediction, output_file):
         evaluation_window_size = 10
-        for name in sorted(os.listdir("data/sample/" + self.DB)):
+        for name in sorted(os.listdir("data/ecg/" + self.DB)):
             if name.endswith('.atr'):
                 signame = name.replace(".atr", "")
                 print(signame)
-                annotation = wfdb.rdann("data/sample/" + self.DB + "/" + signame, 'atr')
+                annotation = wfdb.rdann("data/ecg/" + self.DB + "/" + signame, 'atr')
                 locations = annotation.sample
                 labels = self.get_labels(locations, evaluation_window_size)
                 self.evaluate_rpeak_prediction(prediction, labels, signame, locations, output_file)

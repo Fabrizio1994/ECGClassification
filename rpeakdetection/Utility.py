@@ -35,6 +35,16 @@ class Utility:
             os.system("curl -L " + URL + name + ".dat >> " + name + ".dat")
             os.system("curl -L " + URL + name + ".atr >> " + name + ".atr")
 
+    def write_annotation_peaks_file(self, file_names_path):
+        file = open(file_names_path, "r")
+        for line in file:
+            name = line.replace("\n", "")
+            ann = wfdb.rdann("../../../data/ecg/mitdb/" + name, 'atr')
+            ann_file = open("../../../data/peaks/annotations/" + name + ".tsv", "w")
+            for loc in ann.sample:
+                ann_file.write("%s\n" % str(loc))
+            ann_file.close()
+
 
 
 
