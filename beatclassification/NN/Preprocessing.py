@@ -1,33 +1,65 @@
 from beatclassification.NN.BeatExtraction import BeatExtraction
 from beatclassification.LabelsExtraction import LabelsExtraction
 from beatclassification.NN.keras.LSTM import LSTM_NN
+import matplotlib.pyplot as plt
 import numpy as np
+import sys
 beat_extraction = BeatExtraction()
 labels_extraction = LabelsExtraction()
 lstm = LSTM_NN()
 
-train_dataset = ["106", "108","109", "112", "115", "116", "118", "119", "122", "124", "201",
-                 "205", "207", "208", "209", "215", "223", "230",'101', '114','203','220']
+val_dataset = [ "103",  "121",  "210",
+                "221", "222", "228",  "233", "234"]
+
+train_dataset = ['106', '112', '122', '201', '223', '230',"108","109", "115", "116", "118", "119", "124",
+                 "205", "207", "208", "209", "215",'101', '114','203','220']
 test_dataset = ["100", "103", "105", "111", "113", "117", "121", "123", "200", "202", "210", "212", "213","214", "219",
                 "221", "222", "228", "231", "232", "233", "234"]
-
-supraventricular_db = [i for i in range(800,813)]
-train_dataset.extend([str(e) for e in supraventricular_db])
-
-classes = ["N", "S", "V", "F"]
+classes = ["N", "S", "V", "F", 'Q']
 # associates symbols to classes of beats
 symbol2class = {"N": "N", "L": "N", "R": "N", "e": "N", "j": "N",
                      "A": "S", "a": "S", "J": "S", "S": "S",
                      "V": "V", "E": "V",
-                     "F": "F"}
+                     "F": "F",
+                '/': 'Q', 'f' : 'Q', 'Q':'Q'}
+
 class Preprocessing:
 
-    # considers any symbol that is not in this focus of study as 'N'
-    def filter_symbols(self, symbols):
-        for j in range(len(symbols)):
-            if symbols[j] not in symbol2class.keys():
-                symbols[j] = 'N'
-        return symbols
+    def extract_database(self, Y, dataset, one_hot, windows, window_size, channels, next_beat):
+        X = list()
+        labels = list()
+        for name in dataset:
+            if windows:
+                if next_beat:
+                    symbols = Y[name][window_size-2:-1]
+                else:
+                    symbols = Y[name][window_size-1:-window_size]
+            else:
+                symbols = Y[name][1:-1]
+            signal = beat_extraction.extract(name, window_size, channels)
+            filtered_X, filtered_Y = self.filter(symbols, signal, one_hot)
+            X.extend(filtered_X)
+            labels.extend(filtered_Y)
+        # plt.show()
+        # sys.exit()
+        return X, labels
+
+    # exclude beats not in N, S, V, F, Q classes
+    def filter(self, symbols, signal, one_hot):
+        filtered_X = list()
+        filtered_Y = list()
+        for i in range(len(symbols)):
+            if symbols[i] in list(symbol2class.keys()):
+                filtered_X.append(signal[i])
+                classe = symbol2class[symbols[i]]
+                label = self.class2label[classe]
+                if one_hot :
+                    one_hot = [0]*len(classes)
+                    one_hot[label] = 1
+                    filtered_Y.append(one_hot)
+                else:
+                    filtered_Y.append(label)
+        return filtered_X, filtered_Y
 
     def resample(self, X_train, Y_train, scale_factors):
         X = []
@@ -35,7 +67,7 @@ class Preprocessing:
         k = 0
         for j in range(len(X_train)):
             label = np.argmax(Y_train[j])
-            # undersampling
+            # under sampling
             if scale_factors[label] < 0:
                 if k == abs(scale_factors[label]):
                     X.extend([X_train[j]])
@@ -46,71 +78,57 @@ class Preprocessing:
             else:
                 X.extend([X_train[j]]*scale_factors[label])
                 Y.extend([Y_train[j]] * scale_factors[label])
-        return np.array(X), np.array(Y)
-
-    def one_hot_labels(self, name, all_symbols):
-        symbols = all_symbols[name]
-        symbols = self.filter_symbols(symbols)
-        classes = list(map(lambda x: symbol2class[x], symbols))
-        labels = list(map(lambda x: self.class2label[x], classes))
-        for index in range(len(labels)):
-            one_hot = [0] * 4
-            label = labels[index]
-            one_hot[label] = 1
-            labels[index] = one_hot
-        return labels
+        return X, Y
 
     def assign_weights(self, Y_train):
         weights = []
         # labels not in one-hot format
-        for i in range(4):
+        for i in range(5):
             number_of_instances = len(list(filter(lambda y: y[i] == 1, Y_train)))
             weights.append(number_of_instances)
         weights = [1 / w for w in [q / sum(weights) for q in weights]]
         class_weigths = {}
-        print("class weights:")
-        for i in range(4):
+        for i in range(5):
             class_weigths[i] = weights[i]
-            print(weights[i])
         return class_weigths
 
-    def preprocess_labels(self, all_symbols, window_size):
-        Y_train = []
-        Y_test = []
-        for name in train_dataset:
-            labels = self.one_hot_labels(name, all_symbols)
-            # REMOVE FIRST AND LAST LABEL because of the overflow and underflow due to the window around the peak
-            Y_train.append(labels[3:-3])
-        for name in test_dataset:
-            labels = self.one_hot_labels(name, all_symbols)
-            Y_test.append(labels[3:-3])
-        # all signals labels are flattened in one vector
-        # some labels are excluded due to window size
-        Y_train = np.array([item for sublist in Y_train for item in sublist])[window_size - 1:]
-        Y_test = np.array([item for sublist in Y_test for item in sublist])[window_size - 1:]
-        return Y_test, Y_train
+    def preprocess(self, scale_factors=None, weights=False, one_hot=True, windows=False, window_size=None,
+                   channels=[0], next_beat=False):
+        self.classes_ids()
+        class_weights = None
+        Y = labels_extraction.extract(from_annot=True)
+        print("Extracting beats")
+        X_train, Y_train = self.extract_database(Y, train_dataset, one_hot, windows, window_size, channels,
+                                                 next_beat)
+        X_val, Y_val = self.extract_database(Y, val_dataset, one_hot, windows, window_size, channels,
+                                             next_beat)
+        X_test, Y_test = self.extract_database(Y, test_dataset, one_hot, windows, window_size, channels
+                                               , next_beat)
+        '''print("Original train  distribution")
+        for i in range(len(classes)):
+            print(str(i) + " : " + str(len(list(filter(lambda x : np.argmax(x) == i, Y_train)))))'''
+        if scale_factors is not None:
+            X_train, Y_train = self.resample(X_train, Y_train, scale_factors)
+            # print("Scaled train distribution")
+            # for i in range(len(classes)):
+            #    print(str(i) + " : " + str(len(list(filter(lambda x : np.argmax(x) == i, Y_train)))))
+        #print("Test distribution:")
+        #for i in range(len(classes)):
+        #    print(str(i) + " : " + str(len(list(filter(lambda x : np.argmax(x) == i, Y_test)))))
+        if weights:
+            class_weights = self.assign_weights(Y_train)
+        return np.array(X_train), np.array(Y_train), np.array(X_test), np.array(Y_test),\
+                np.array(X_val), np.array(Y_val),class_weights
 
-    # scale = vector of scaling factors. A negative factor stands for undersampling
-    def extract(self, scale, window_size):
+    def classes_ids(self):
         # label is the integer value associated to a class
         self.class2label = {}
         count = 0
         for classe in classes:
             self.class2label[classe] = count
             count += 1
-        X_train, X_test = beat_extraction.extract(window_size)
-        all_symbols = labels_extraction.extract(from_annot=True)
-        Y_test, Y_train = self.preprocess_labels(all_symbols, window_size)
-        print("original distribution")
-        for i in range(4):
-            number_of_instances = len(list(filter(lambda y: y[i] == 1, Y_train)))
-            print(str(i) + " " + str(number_of_instances))
-        X_train, Y_train = self.resample(X_train, Y_train, scale)
-        print("scaled distribution")
-        for i in range(4):
-            number_of_instances = len(list(filter(lambda y: y[i] == 1, Y_train)))
-            print(str(i) + " " + str(number_of_instances))
-        return X_train, Y_train, X_test, Y_test#, X_val, Y_val
+
+
 
 
 
