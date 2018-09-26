@@ -6,40 +6,41 @@ from rpeakdetection.Utility import Utility
 
 ut = Utility()
 
+
 class LabelsExtraction:
 
-    def extract(self, include_vf=False, from_annot = False):
-        print("Extracting labels")
-        ann_path = '../../../data/ecg/mitdb/'
+    def extract(self, ann_path, db='mitdb', peaks=None, include_vf=False, from_annot=True):
+        """reads beat labels for each signal in a Physionet database
+        :arg ann_path: path of the local folder containing the annotations files(.atr)
+        :arg db: string identifier for the Physionet DB
+        :arg include_vf: whether to include Ventricular Fibrillation(VF) annotations
+        :arg peaks: list or numpy array containing the peaks locations. Used only if from_annot=False
+        :arg from_annot: whether to associate labels to peaks from the ground truth(.atr file)
+        :returns labels: a dictionary [signal_name, labels]
+        """
         labels = defaultdict(list)
-        names_file = open("../../../data/mitdb_names.txt", "r")
-        for line in names_file:
-            name = line.replace("\n", '')
+        if peaks is None:
+            peaks = defaultdict(list)
+        names = wfdb.get_record_list(db)
+        for name in names:
             if name == '207' and include_vf:
                 annotation = wfdb.rdann(ann_path + name + '_VF', 'atr')
-                ann_samples = annotation.sample
                 ann_symbols = annotation.symbol
             else:
-                ann_symbols = ut.remove_non_beat(ann_path + name)[1]
-                ann_samples = ut.remove_non_beat(ann_path + name)[0]
+                ann_samples, ann_symbols = ut.remove_non_beat(ann_path + name)
             if from_annot:
+                peaks[name] = ann_samples
                 labels[name] = ann_symbols
             else:
-                rpeak_output_dir = "../../../data/peaks/pantompkins/mitdb"
-                input_samples_file = open(rpeak_output_dir + '/' + name + '.tsv', 'r')
-                input_samples = []
-                output_labels = []
-                for line in input_samples_file:
-                    sample_location = line.replace('\n', '')
-                    input_samples.append(int(sample_location))
-                for input in input_samples:
-                    closest = self.take_closest(ann_samples, input)
+                output_labels = list()
+                for peak in peaks:
+                    closest = self.take_closest(ann_samples, peak)
                     if closest == len(ann_samples):
                         output_labels.append(ann_symbols[closest - 1])
                     else:
                         output_labels.append(ann_symbols[closest])
                 labels[name] = output_labels
-        return labels
+        return labels, peaks
 
     def take_closest(self, annotation_samples, peak_location):
         pos = bisect_left(annotation_samples, peak_location)
