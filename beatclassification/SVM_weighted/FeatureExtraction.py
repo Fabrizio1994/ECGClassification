@@ -1,14 +1,13 @@
 import wfdb
 import numpy as np
 from scipy import stats
+from scipy.signal import medfilt
+
 import os
 from beatclassification.LabelsExtraction import LabelsExtraction
-from sklearn.decomposition import PCA
+import pywt
 
-peaks_path = "../data/peaks/pantompkins/mitdb"
-ann_path = "../../data/ecg/mitdb/"
-LEFT_WINDOW = 70
-RIGHT_WINDOW = 100
+
 le = LabelsExtraction()
 
 class FeatureExtraction:
@@ -32,72 +31,88 @@ class FeatureExtraction:
             self.label2class[count] = classe
             count += 1
 
-    def extract(self, names, scale_factors=None, one_hot=False, read_annot=False):
-        # extract labels of peaks from rpeakdetector
-        if not read_annot:
-            # dict -> signame2symbols
-            self.symbols = le.extract(peaks_path)
+    def extract(self, db_names, peaks, ann_path, features_group=['rr'], from_annot=True, left_window=70, right_window=100,
+                scale_factors=None, one_hot=False):
+        """
+        :param features_group: list or numpy array containing the feature names to compute.
+            available = 'rr', 'hos', 'wavelets', 'raw'
+        :param db_names: list or numpy array containing the names of the signals in the train or test database
+        :param peaks: dict[signal_name, locations] containing the locations of the peaks in the signal
+        :param ann_path: path of the local folder containing the annotations files (.atr)
+        :param from_annot: whether to associate labels to peaks from the ground truth(.atr file)
+        :param left_window: number of samples at the left of the rpeak location to include in the features computation
+        :param right_window: number of samples at the right of the rpeak location to include in the features computation
+        :param scale_factors: size=n_classes
+            list or numpy array containing the reducing or augmenting factors for each class
+        :param one_hot: whether to return labels in one hot format
+        :return: features and labels arrays for the given database(train or test)
+        """
         features = list()
         labels = list()
-        for name in names:
+        symbols = le.extract(ann_path, from_annot=from_annot)
+        for name in db_names:
             print(name)
-            signal, peaks, symbols = self.read_data(name, read_annot)
-            rr_intervals = np.diff(peaks)
+            sig_peaks = peaks[name]
+            signal, sig_symbols = self.read_data(name, ann_path, symbols)
+            rr_intervals = np.diff(sig_peaks)
             rr_mean = np.mean(rr_intervals)
-            # symbols out of the scope of this study are excluded
-            symbols = list(filter(lambda x: x in self.mitdb_symbols, symbols))
-            # because the 5 previous rr intervals are needed, the first rr interval is also excluded
-            # because its value is not relevant(it is the distance from the start).
-            for count in range(6, len(symbols)-5):
-                symbol = symbols[count]
-                feature = list()
-                peak = peaks[count]
-                qrs = signal[peak - LEFT_WINDOW:peak +RIGHT_WINDOW]
-                feature = self.rr_features(count, feature, rr_intervals, rr_mean)
-                feature = self.signal_cumulants(qrs, feature)
-                features.append(feature)
-                classe = self.symbol2class[symbol]
-                label = self.class2label[classe]
-                if one_hot:
-                    hot_lab = np.zeros(len(self.class2label), dtype=np.int8)
-                    hot_lab[label] = 1
-                    label = hot_lab
-                labels.append(label)
+            # starts from the 6th beat because the 5 previous rr intervals are needed
+            # ends at 5 to the end beacause the 5 following rr intervals are needed
+            sig_symbols = sig_symbols[5:-5]
+            for count in range(5, len(sig_symbols)):
+                symbol = sig_symbols[count]
+                if symbol in self.mitdb_symbols:
+                    feature = list()
+                    peak = sig_peaks[count]
+                    qrs = signal[peak - left_window:peak + right_window]
+                    if 'raw' in features_group:
+                        feature.extend(qrs)
+                    if 'rr' in features_group:
+                        feature = self.rr_features(count, feature, rr_intervals, rr_mean)
+                    if 'hos' in features_group:
+                        feature = self.signal_cumulants(qrs, feature)
+                    if 'wavelets' in features_group:
+                        feature = self.wavelets(qrs, feature)
+                    features.append(feature)
+                    classe = self.symbol2class[symbol]
+                    label = self.class2label[classe]
+                    if one_hot:
+                        hot_lab = np.zeros(len(self.class2label), dtype=np.int8)
+                        hot_lab[label] = 1
+                        label = hot_lab
+                    labels.append(label)
         if scale_factors is not None:
             features, labels = self.resample(features, labels, scale_factors=scale_factors)
         return np.array(features), np.array(labels)
 
-
-
     def rr_features(self, count, feature, rr_intervals, rr_mean):
         window = rr_intervals[count - 5: count + 5]
         win_mean = np.mean(window)
-        prev_3 = rr_intervals[count - 3: count]
+        prev_3 = rr_intervals[count - 2: count + 1]
         prev_3 = np.divide(prev_3, rr_mean)
-        prev = rr_intervals[count - 1]
-        next = rr_intervals[count]
+        prev = rr_intervals[count]
+        next = rr_intervals[count + 1]
         feature.extend([prev, next, win_mean])
         feature.extend(prev_3)
         return feature
 
-    def read_data(self, name, read_annot):
-        record = wfdb.rdrecord(ann_path + name)
-        signal = []
-        for elem in record.p_signal:
-            signal.append(elem[0])
-        if read_annot:
-            annotation = wfdb.rdann(ann_path + name, "atr")
-            symbols = annotation.symbol
-            peaks = annotation.sample
+    def read_data(self, name, ann_path, symbols):
+        if name == '114':
+            record = wfdb.rdrecord(ann_path + name, channels=[1])
         else:
-            symbols = self.symbols[name]
-            peaks = self.read_peaks(peaks_path, name)
-        return signal, peaks, symbols
+            record = wfdb.rdrecord(ann_path + name, channels=[0])
+        signal = record.p_signal.flatten()
+        # median_filter1D
+        baseline = medfilt(signal, 71)
+        baseline = medfilt(baseline, 215)
+        for i in range(0, len(signal)):
+            signal[i] = signal[i] - baseline[i]
+        return signal, symbols[name]
 
     # takes a window of [-90,+90] around the Rpeak
     # TODO: does it require filtering?
     def signal_cumulants(self, qrs, feature):
-        poses = [30, 60, 90, 120, 150]
+        poses = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150]
         lag = 15
         second = list()
         third = list()
@@ -119,14 +134,6 @@ class FeatureExtraction:
         feature.extend(fourth)
         return feature
 
-
-    def read_peaks(self, peaks_path, name):
-        file = open(peaks_path + "/" + name + ".tsv")
-        peaks = []
-        for line in file:
-            peaks.append(int(line.replace("\n","")))
-        return peaks
-
     def resample(self, X_train, Y_train, scale_factors):
         count = 0
         X = list()
@@ -146,6 +153,13 @@ class FeatureExtraction:
                 X.extend([X_train[j]]*scale_factors[label])
                 Y.extend([Y_train[j]]*scale_factors[label])
         return X, Y
+
+    def wavelets(self, qrs, feature):
+        db1 = pywt.Wavelet('db1')
+        coeffs = pywt.wavedec(qrs, db1, level=3)
+        wavel = coeffs[0]
+        feature.extend(wavel)
+        return feature
 
 
 
