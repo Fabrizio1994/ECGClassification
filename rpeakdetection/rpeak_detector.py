@@ -4,7 +4,6 @@ import numpy as np
 import scipy.signal
 import scipy.ndimage
 from rpeakdetection.Utility import Utility
-from pandas_ml import ConfusionMatrix
 
 util = Utility()
 
@@ -105,8 +104,10 @@ class RPeakDetector:
                 rpeak = index
         return rpeak
 
-    def evaluate(self, rpeaks, name, evaluation_width):
+    def evaluate(self, rpeaks, name, evaluation_width, test_index=None):
         real_locations = util.remove_non_beat(name)[0]
+        if test_index is not None:
+            real_locations = list(filter(lambda x: x >= test_index, real_locations))
         av_rr_intervals = np.mean(np.diff(real_locations))
         window_size = int(evaluation_width / 2)
         Y = list()
