@@ -82,14 +82,14 @@ class Pan:
         vector = [1, 2, 0, -2, -1]
         if fs != 200:
             int_c = 160/fs
-            #TODO: Prima range(1,6) o prima [i*....] ???
-            b = interp1d(range(1, 6), [i*fs/8 for i in vector])(np.arange(1, 5, int_c))
+            # 5.1 since in signal 100 we must include 5
+            b = interp1d(range(1, 6), [i*fs/8 for i in vector])(np.arange(1, 5.1, int_c))
         else:
             b = [i*fs/8 for i in vector]
 
 
-
         ecg_d = signal.filtfilt(b, 1, ecg_h)
+        #print(ecg_d[:5])
         ecg_d = ecg_d/np.max(ecg_d)
 
         ''' Squaring nonlinearly enhance the dominant peaks '''
@@ -101,8 +101,7 @@ class Pan:
 
         temp_vector = np.ones((1, round(0.150*fs)))/round(0.150*fs)
         temp_vector = temp_vector.flatten()
-        ecg_m = np.convolve(ecg_s, temp_vector, 'same')
-        print(ecg_m.shape)
+        ecg_m = np.convolve(ecg_s, temp_vector)
         delay = delay + round(0.150*fs)/2
 
         ''' Fiducial Marks '''
@@ -111,10 +110,12 @@ class Pan:
 
 
         #TODO: TROVARE PKS E LOCS ESATTI
-        locs = peakutils.indexes(y=ecg_m, min_dist=round(0.2*fs))
+        #print(ecg_m[:10])
+        locs = peakutils.indexes(y=ecg_m)
         pks = []
         for val in locs:
             pks.append(ecg_m[val])
+
 
         ''' Initialize Some Other Parameters '''
         LLp = len(pks)

@@ -95,6 +95,7 @@ if fs == 200
    [a,b] = butter(N,Wn,'high');                                            % bandpass filtering
    ecg_h = filtfilt(a,b,ecg_l); 
    ecg_h = ecg_h/ max(abs(ecg_h));
+   disp(size(ecg_h))
    if gr
     ax(3)=subplot(323);plot(ecg_h);axis tight;title('High Pass Filtered');
    end
