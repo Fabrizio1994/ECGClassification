@@ -43,7 +43,7 @@ class KNN:
                 for t_size in test_sizes:
                     X_train, X_test, y_train, y_test = train_test_split(X, Y, shuffle=False,
                                                                         test_size=t_size, random_state=42)
-                    predicted = gs.predict(X_train, X_test, y_train, name)
+                    predicted = gs.predict(X_train, X_test, y_train, name, len(channels))
                     print("n rpeaks predicted")
                     print(len(list(filter(lambda x: x == 1, predicted))))
                     test_index = len(X_train)*self.WINDOW_SIZE

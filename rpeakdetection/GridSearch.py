@@ -6,7 +6,7 @@ import pickle
 
 class GridSearch:
 
-    def predict(self, X_train, X_test, y_train, name):
+    def predict(self, X_train, X_test, y_train, name, n_channels):
 
         classifier = KNeighborsClassifier()
         parameters = {
@@ -22,7 +22,7 @@ class GridSearch:
                                    verbose=0)
         grid_search.fit(X_train, y_train)
         best_classifier = grid_search.best_estimator_
-        with open('rpeakdetection/classifiers/knn_'+name+'.pkl', 'wb') as fid:
+        with open('rpeakdetection/classifiers/knn_'+name+'_'+str(n_channels)+'.pkl', 'wb') as fid:
             pickle.dump(best_classifier, fid)
         return grid_search.predict(X_test)
 
