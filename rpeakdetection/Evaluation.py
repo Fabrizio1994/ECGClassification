@@ -1,5 +1,5 @@
 import os
-from rpeakdetection.FeatureExtraction import FeatureExtraction
+from rpeakdetection.KNN.FeatureExtraction import FeatureExtraction
 import wfdb
 import numpy as np
 
