@@ -2,18 +2,27 @@ import wfdb
 import numpy as np
 import os
 
+# 100 min height R wave = 0.605 -> min_height
+# Provare con minimo assoluto (tra tutti i segnali)
+# Provare con minimo relativo (uno per ogni segnale)
+# minimumRR = 72 samples
+# peakutils.indexes ( ARRAY, thresh = min_height, min_dist = minimumRR)
 
 class Utility:
 
     BEAT_ANN = ['N', 'L', 'R', 'B', 'A', 'a', 'J', 'S', 'V', 'r', 'F', 'e', 'j', 'n', 'E', '/', 'f', 'Q', '?']
 
-    def remove_non_beat(self, sample_name):
+    def remove_non_beat(self, sample_name, rule_based):
+        if rule_based:
+            self.BEAT_ANN.extend(['[', '!', ']', '(BII\x00'])
         annotation = wfdb.rdann(sample_name, "atr")
         beat_ann = list()
         beat_sym = list()
         samples = annotation.sample
         symbols = annotation.symbol
         for j in range(len(annotation.sample)):
+            if symbols[j] == '+' and rule_based:
+                symbols[j] = annotation.aux_note[j]
             if symbols[j] in self.BEAT_ANN:
                 symbol = symbols[j]
                 peak = samples[j]
