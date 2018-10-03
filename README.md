@@ -225,7 +225,7 @@ In order to get all the peaks of each signal we used a matlab version of the alg
 |232|97.771|99.415|99.085|99.191|98.863|99.438|99.159|99.421|99.726|98.898|100.0|99.449|
 |233|91.125|92.192|96.411|97.385|98.327|97.678|99.52|98.705|98.697|99.331|99.472|99.298|
 |234|100.0|99.440|99.828|99.642|99.263|99.644|99.621|99.822|99.814|99.815|99.815|99.815|
-
+![alt text](https://imgur.com/a/0SwZHoq)
 ![KNN-Plot-Results](https://imgur.com/a/0SwZHoq)
 
 ## Incart Database
