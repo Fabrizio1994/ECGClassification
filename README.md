@@ -226,7 +226,7 @@ In order to get all the peaks of each signal we used a matlab version of the alg
 |233|91.125|92.192|96.411|97.385|98.327|97.678|99.52|98.705|98.697|99.331|99.472|99.298|
 |234|100.0|99.440|99.828|99.642|99.263|99.644|99.621|99.822|99.814|99.815|99.815|99.815|
 
-![KNN-Plot-Results](https://i.imgur.com/3OwZ6Jl.png)
+![KNN-Plot-Results](https://imgur.com/a/0SwZHoq)
 
 ## Incart Database
 ### Window Level One Channel
