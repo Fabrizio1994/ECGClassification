@@ -2,17 +2,30 @@ import wfdb
 from scipy import signal
 import numpy as np
 from collections import defaultdict
+import pickle
 
 class FeatureExtraction:
 
-    def extract_features(self, signal_name, rpeak_locations, window_size, feature_group):
-        print("Extracting features for signal " + signal_name + "...")
-        record = wfdb.rdrecord(signal_name, channels=[0])
+    def extract_features(self,name, path, rpeak_locations, window_size, write=False):
+        print("Extracting features for signal " + path + "...")
+        if name == '114':
+            record = wfdb.rdrecord(path, channels=[1])
+        else:
+            record = wfdb.rdrecord(path, channels=[0])
         record = np.transpose(record.p_signal)
-        record = self.gradient(self.filter(record))
-        if feature_group == 'window':
-            return self.compute_sliding_features(record, rpeak_locations, window_size)
-
+        if write:
+            gradient = self.gradient(self.filter(record))
+            features, labels = self.compute_sliding_features(gradient, rpeak_locations, window_size)
+            with open('rpeakdetection/KNN/features/' + name +'.pkl', 'wb') as fid:
+                pickle.dump(features, fid)
+            with open('rpeakdetection/KNN/features/' + name + '_labels.pkl', 'wb') as fid:
+                pickle.dump(labels, fid)
+        else:
+            features = pickle.load(
+                open('rpeakdetection/KNN/features/'+ name +'.pkl', 'rb'))
+            labels = pickle.load(
+                open('rpeakdetection/KNN/features/' + name + '_labels.pkl', 'rb'))
+        return record, features, labels
 
     def compute_sliding_features(self, record, rpeak_locations, window_size):
         features = list()
@@ -30,7 +43,7 @@ class FeatureExtraction:
             else:
                 labels.append(-1)
             i += window_size
-        return record, features, labels
+        return features, labels
 
     def gradient(self, record):
         record_gradient = list()

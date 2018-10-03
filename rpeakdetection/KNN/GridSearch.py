@@ -20,6 +20,7 @@ class GridSearch:
                                    cv=5,
                                    n_jobs=-1,
                                    verbose=0)
+        print("training on the first 54s")
         grid_search.fit(X_train, y_train)
         best_classifier = grid_search.best_estimator_
         with open('rpeakdetection/KNN/classifiers/knn_'+name+'_'+str(test_size)+'.pkl', 'wb') as fid:
