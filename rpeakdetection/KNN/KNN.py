@@ -26,7 +26,7 @@ class KNN:
     def rpeak_detection(self, train=True):
         # we use the first 54s for training and the remaining 97% of the signal for testing
         test_size = 0.97
-        for name in ['228', '230', '231', '232', '233', '234']:
+        for name in wfdb.get_record_list('mitdb'):
             path = ("data/ecg/"+self.DB+"/"+name)
             rpeak_locations = ut.remove_non_beat(path, rule_based=False)[0]
             record, X, Y = fe.extract_features(name=name,path=path, rpeak_locations=rpeak_locations,
