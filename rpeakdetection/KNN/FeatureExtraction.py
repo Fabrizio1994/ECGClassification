@@ -2,30 +2,41 @@ import wfdb
 from scipy import signal
 import numpy as np
 from collections import defaultdict
+from scipy.interpolate import interp1d
 import pickle
 
 class FeatureExtraction:
 
-    def extract_features(self,name, path, rpeak_locations, window_size, write=False):
+    def extract_features(self,name, path, rpeak_locations, window_size, channels, write=False):
         print("Extracting features for signal " + path + "...")
-        if name == '114':
-            record = wfdb.rdrecord(path, channels=[1])
-        else:
-            record = wfdb.rdrecord(path, channels=[0])
-        record = np.transpose(record.p_signal)
+        record = self.preprocess(channels, name, path)
+        features_path = 'rpeakdetection/KNN/features/'
+        feat_name = features_path + name + '_' + str(window_size) + '_' + str(len(channels)) + '.pkl'
+        labels_name = features_path + name + '_' + str(window_size) + '_labels.pkl'
+        filtered = list()
+        for i in range(len(channels)):
+            filtered_channel = self.filter(record[i])
+            filtered.append(filtered_channel)
         if write:
-            gradient = self.gradient(self.filter(record))
-            features, labels = self.compute_sliding_features(gradient, rpeak_locations, window_size)
-            with open('rpeakdetection/KNN/features/' + name +'.pkl', 'wb') as fid:
+            features, labels = self.compute_sliding_features(filtered, rpeak_locations, window_size)
+            with open(feat_name, 'wb') as fid:
                 pickle.dump(features, fid)
-            with open('rpeakdetection/KNN/features/' + name + '_labels.pkl', 'wb') as fid:
+            with open(labels_name, 'wb') as fid:
                 pickle.dump(labels, fid)
         else:
             features = pickle.load(
-                open('rpeakdetection/KNN/features/'+ name +'.pkl', 'rb'))
+                open(feat_name, 'rb'))
             labels = pickle.load(
-                open('rpeakdetection/KNN/features/' + name + '_labels.pkl', 'rb'))
-        return record, features, labels
+                open(labels_name, 'rb'))
+        return filtered, features, labels
+
+    def preprocess(self, channels, name, path):
+        if name == '114' and channels == [[0]]:
+            record = wfdb.rdrecord(path, channels=[1])
+        else:
+            record = wfdb.rdrecord(path, channels=channels)
+        record = np.transpose(record.p_signal)
+        return record
 
     def compute_sliding_features(self, record, rpeak_locations, window_size):
         features = list()
@@ -45,14 +56,6 @@ class FeatureExtraction:
             i += window_size
         return features, labels
 
-    def gradient(self, record):
-        record_gradient = list()
-        for i in range(len(record)):
-            gradient = np.diff(record[i])
-            gradient_norm = np.max(np.abs(gradient))
-            record_gradient.append(np.divide(gradient, gradient_norm))
-        return record_gradient
-
 
     def filter(self, record):
         fs = 360
@@ -65,8 +68,16 @@ class FeatureExtraction:
         # bandpass
         [a, b] = signal.butter(N, Wn, 'band')
         # filtering
-        for i in range(len(record)):
-            record[i] = signal.filtfilt(a, b, record[i])
-        return record
+        filtered = signal.filtfilt(a, b, record)
+        vector = [1, 2, 0, -2, -1]
+        int_c = 160 / fs
+        # 5.1 since in signal 100 we must include 5
+        b = interp1d(range(1, 6), [i * fs / 8 for i in vector])(np.arange(1, 5.1, int_c))
+        ecg_d = signal.filtfilt(b, 1, filtered)
+        # print(ecg_d[:5])
+        ecg_d = ecg_d / np.max(ecg_d)
+        ''' Squaring nonlinearly enhance the dominant peaks '''
+        ecg_s = ecg_d ** 2
+        return ecg_s
 
 

@@ -5,6 +5,9 @@ import numpy as np
 from rpeakdetection.rpeak_detector import RPeakDetector
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from beatclassification.LabelsExtraction import LabelsExtraction
+import time
+import sys
 
 PATH = 'data/ecg/mitdb/'
 util = Utility()
@@ -48,23 +51,44 @@ class PeakDetector():
         record = np.divide(record, np.max(record))
         return record
 
-    def plot_criticism(self, peaks, signal, plot_to, threshold,  plot_from=0):
-        real_peaks = list(filter(lambda x : x <= peaks[-1] + 18,util.remove_non_beat('data/ecg/mitdb/100', False)[0]))
-        fig, ax = plt.subplots()
-        ax.scatter(real_peaks, [signal[p] for p in real_peaks], color ='blue', label = 'real_peaks')
-        ax.scatter([peaks], [signal[peaks]], color ='red', label = 'detected_peak')
-        plt.plot(signal[plot_from:plot_to])
-        plt.plot([0, plot_to], [threshold]*2, label = 'threshold')
-        ax.legend()
-        plt.legend()
-        plt.savefig("generic_criticism.png")
-        plt.close()
+    def plot_criticism(self, signal, name, peaks,  threshold=None):
+        real_peaks = util.remove_non_beat('data/ecg/mitdb/' + name, False)[0]
+        # compute the first wrong detection
+        critics = list(filter(lambda x :min(np.abs([x - real_peaks[q] for q in range(len(real_peaks))])) > 18, peaks))
+        if len(critics) == 0:
+            print("no crticisms")
+            sys.exit()
+        else:
+            critic = critics[0]
+            real_index = np.argmin(np.abs([critic - real_peaks[q] for q in range(len(real_peaks))]))
+            real_plot = real_peaks[real_index]
+            plot_from = max(0,min(real_plot, critic) -30)
+            plot_to = max(real_plot, critic) + 30
+            fig, ax = plt.subplots()
+            signal_plot = signal[plot_from:plot_to]
+            min_y = min(signal_plot)
+            max_y = max(signal_plot)
+            plt.plot([real_plot - 18, real_plot - 18], [min_y, max_y], '--', label='start evaluation window')
+            plt.plot([real_plot + 18, real_plot + 18], [min_y, max_y], '--', label='end evaluation window')
+            ax.scatter([real_plot], [signal[real_plot]], color ='blue', label = 'real_peaks')
+            ax.scatter([critic], [signal[critic]], color ='red', label = 'detected_peak')
+            plt.plot(np.arange(plot_from, plot_to), signal_plot)
+            if threshold is not None:
+                plt.plot([0, plot_to], [threshold]*2, label = 'threshold')
+            ax.legend()
+            plt.legend()
+            plt.savefig("criticism.png")
+            plt.close()
+            return critic, real_plot
 
     def signals_evaluation(self, threshold):
         precisions = list()
         recalls = list()
         for name in wfdb.get_record_list('mitdb'):
+            start_time = time.time()
             record, indices = self.detect_peaks(name, threshold)
+            elapsed = time.time() - start_time
+            print(elapsed/len(record))
             precision, recall = rpeak.evaluate(indices, PATH +name, eval_width, False)
             precisions.append(precision)
             recalls.append(recall)
@@ -72,7 +96,3 @@ class PeakDetector():
         av = 'average'
         print("{:s}, {:f}, {:f}".format(av, np.mean(precisions), np.mean(recalls)))
 
-
-if __name__ == '__main__':
-    pd = PeakDetector()
-    pd.choose_tresholds(np.arange(0.1,0.95,0.05))
