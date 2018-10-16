@@ -7,32 +7,55 @@ import pickle
 
 class FeatureExtraction:
 
-    def extract_features(self,name, path, rpeak_locations, window_size, channels, write=False):
+    def extract_features(self,name, path, rpeak_locations, features_comb):
+        if 'KNN_w' in features_comb:
+            approach = 'window'
+        else:
+            approach = 'sample'
+        if '1' in features_comb:
+            channels = [0]
+        elif '2' in features_comb:
+            channels = [1]
+        else:
+            channels = [0, 1]
+        filtered = 'FS' in features_comb
+        write = not (filtered and approach == 'window' and not '2' in features_comb)
         print("Extracting features for signal " + path + "...")
         record = self.preprocess(channels, name, path)
         features_path = 'rpeakdetection/KNN/features/'
-        feat_name = features_path + name + '_' + str(window_size) + '_' + str(len(channels)) + '.pkl'
-        labels_name = features_path + name + '_' + str(window_size) + '_labels.pkl'
-        filtered = list()
-        for i in range(len(channels)):
-            filtered_channel = self.filter(record[i])
-            filtered.append(filtered_channel)
+        if filtered:
+            filtered_record = list()
+            for i in range(len(channels)):
+                filtered_channel = self.filter(record[i])
+                filtered_record.append(filtered_channel)
+            record = filtered_record
+        comb_name = features_comb[0] + '_' + features_comb[1] + '_' + features_comb[2]
+        feat_name = features_path + name + '_' + comb_name + '.pkl'
+        labels_name = features_path + name + '_' + comb_name + '_labels.pkl'
         if write:
-            features, labels = self.compute_sliding_features(filtered, rpeak_locations, window_size)
+            if approach == 'window':
+                features, labels = self.compute_sliding_features(record, rpeak_locations, window_size=100)
+            else:
+                features, labels = self.compute_sample_features(record, rpeak_locations)
             with open(feat_name, 'wb') as fid:
                 pickle.dump(features, fid)
             with open(labels_name, 'wb') as fid:
                 pickle.dump(labels, fid)
         else:
             features = pickle.load(
-                open(feat_name, 'rb'))
+                open("rpeakdetection/KNN/features/"+name+"_100_"+str(len(channels))+'.pkl', 'rb'))
             labels = pickle.load(
-                open(labels_name, 'rb'))
-        return filtered, features, labels
+                open("rpeakdetection/KNN/features/"+name+"_100_labels.pkl", 'rb'))
+        return record, features, labels
 
     def preprocess(self, channels, name, path):
-        if name == '114' and channels == [[0]]:
-            record = wfdb.rdrecord(path, channels=[1])
+        if name == '114':
+            if channels == [[0]]:
+                record = wfdb.rdrecord(path, channels=[1])
+            elif channels == [[1]]:
+                record = wfdb.rdrecord(path, channels=[0])
+            else:
+                record = wfdb.rdrecord(path, channels=channels)
         else:
             record = wfdb.rdrecord(path, channels=channels)
         record = np.transpose(record.p_signal)
@@ -56,6 +79,18 @@ class FeatureExtraction:
             i += window_size
         return features, labels
 
+    def compute_sample_features(self, record, rpeak_locations):
+        features = list()
+        labels = list()
+        i = 0
+        while i< len(record[0]):
+            feature = list()
+            for id in range(len(record)):
+                feature.append(record[id][i])
+            features.append(feature)
+            labels.append(int(i in rpeak_locations))
+            i += 1
+        return features, labels
 
     def filter(self, record):
         fs = 360
