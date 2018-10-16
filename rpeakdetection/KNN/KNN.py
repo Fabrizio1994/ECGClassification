@@ -7,6 +7,7 @@ from rpeakdetection.Utility import Utility
 from rpeakdetection.rpeak_detector import RPeakDetector
 import matplotlib.pyplot as plt
 import pickle
+import itertools
 from collections import defaultdict
 from sklearn.model_selection import train_test_split
 import time
@@ -22,54 +23,71 @@ class KNN:
 
     DB = "mitdb"
 
-    def rpeak_detection(self,names=None, train=True):
-        window_sizes = [100]
-        channels = [[0]]
-        test_sizes = [0.97]
-        min_dists = [70]
-        recalls = list()
-        precisions = list()
-        result = dict()
+    def rpeak_detection(self,names=None):
+        window_size = 100
+        test_size = 0.97
+        min_dist = 72
+        approach_f = ['KNN_s']
+        channels_f = ['1','12']
+        filtered_f = ['RS']
+        results = defaultdict(list)
+        combinations = [approach_f, channels_f, filtered_f]
         if names is None:
             names = wfdb.get_record_list('mitdb')
+        for comb in itertools.product(*combinations):
+            recalls = list()
+            precisions = list()
+            times = list()
+            print(comb)
         # we use the first 54s for training and the remaining 97% of the signal for testing
-        for name in names :
-            for window_size in window_sizes:
-                for channel in channels:
-                    path = ("data/ecg/"+self.DB+"/"+name)
-                    rpeak_locations = ut.remove_non_beat(path, rule_based=False)[0]
-                    record, X, Y = fe.extract_features(name=name,path=path, rpeak_locations=rpeak_locations,
-                                                       window_size=window_size,
-                                                        write=False, channels=channel)
-                    for test_size in test_sizes:
-                        X_train, X_test, y_train, y_test = train_test_split(X, Y, shuffle=False,
-                                                                            test_size=test_size)
-                        if train:
-                            self.start_time, predicted = gs.predict(X_train, X_test, y_train, name)
-                        else:
-                            loaded_model = pickle.load(open('rpeakdetection/KNN/classifiers/knn_'+name+'.pkl', 'rb'))
-                            self.start_time = time.time()
-                            predicted = loaded_model.predict(X_test)
-                        test_index = len(X_train)*window_size
-                        for min_dist in min_dists:
-                            peaks = self.get_peaks(predicted, window_size, record, test_index, min_dist)
-                            result[name] = peaks
-                            recall, precision = rpd.evaluate(peaks, path, window_size, False, test_index)
-                            recalls.append(recall)
-                            precisions.append(precision)
-                            print('{:s}, {:f}, {:f}'.format(name, precision, recall))
-        av = 'average'
-        print("{:s}, {:f}, {:f}".format(av, np.mean(precisions), np.mean(recalls)))
-        return result
+            for name in names :
+                path = ("data/ecg/"+self.DB+"/"+name)
+                rpeak_locations = ut.remove_non_beat(path, rule_based=False)[0]
+                record, X, Y = fe.extract_features(name=name,path=path, rpeak_locations=rpeak_locations,
+                                                   features_comb=comb)
+                X_train, X_test, y_train, y_test = train_test_split(X, Y, shuffle=False,
+                                                                    test_size=test_size)
+                train = not('KNN_w' in comb and '1' in comb and 'FS' in comb)
+                if train:
+                    self.start_time, predicted = gs.predict(X_train, X_test, y_train, name, comb)
+                else:
+                    loaded_model = pickle.load(open('rpeakdetection/KNN/classifiers/knn_'+name+'.pkl', 'rb'))
+                    self.start_time = time.time()
+                    predicted = loaded_model.predict(X_test)
+                if 'KNN_s' in comb:
+                    elapsed_time = time.time() - self.start_time
+                    elapsed_time = elapsed_time / len(record[0])
+                    test_index = len(X_train)
+                    peaks = self.get_sample_peaks(predicted, test_index, min_dist)
+                if 'KNN_w' in comb:
+                    test_index = len(X_train) * window_size
+                    elapsed_time, peaks = self.get_peaks(predicted, window_size, record, test_index, min_dist)
+                recall, precision = rpd.evaluate(peaks, path, window_size, False, test_index)
+                recalls.append(recall)
+                precisions.append(precision)
+                times.append(elapsed_time)
+            comb_name = comb[0] + '_' + comb[1] + '_' + comb[2]
+            results[comb_name] = [np.mean(precisions), np.mean(recalls), np.mean(times)]
+            print("{:s}, {:f}, {:f}, {:f}".format(comb_name, np.mean(precisions), np.mean(recalls), np.mean(times)))
+        print(results)
+        with open('results.pkl', 'wb') as fid:
+            pickle.dump(results, fid)
 
-
-
+    def get_sample_peaks(self, predicted, test_index, min_dist):
+        all_peaks = np.where(predicted == 1)
+        all_peaks = list(map(lambda x: x + test_index, all_peaks))
+        prev = 0
+        peaks = list()
+        all_peaks = np.array(all_peaks).flatten().tolist()
+        for p in all_peaks:
+            if p - prev > min_dist:
+                peaks.append(p)
+                prev = p
+        return peaks
 
     def get_peaks(self, predicted_regions, window_size, record, test_index, min_dist):
         # we use always the first channel for taking the maximum in the qrs region
         signal = record[0]
-        # a minimum distance of 40 samples is considered between two Rpeaks due to physiological reasons
-        # min_dist = 40
         Y_predicted = list()
         window_start = test_index
         prev = 0
@@ -83,56 +101,11 @@ class KNN:
                 prev = rpeak_loc
             window_start += window_size
         elapsed_time = time.time() - self.start_time
-        print("elapsed time for a single sample:")
-        print(elapsed_time/len(signal))
-        return Y_predicted
-
-    def plot(self, region, neighbors, critic, labels):
-        critic_index = critic % len(region)
-        f, axarr = plt.subplots(len(neighbors) + 1, sharex=True)
-        plot_x = np.arange(len(region))
-        axarr[0].plot(plot_x, region)
-        axarr[0].scatter([critic_index], [region[critic_index]], color ='red', label = 'detected_peak')
-        axarr[0].set_title('test_region')
-        axarr[0].legend()
-        for i in range(1, len(neighbors)+1):
-            axarr[i].set_title('neighbor')
-            axarr[i].plot(plot_x, neighbors[i-1])
-            if labels[i-1] == 1:
-                peak = np.argmax(np.abs(neighbors[i-1]))
-                axarr[i].scatter([peak], neighbors[i-1][peak], color = 'blue', label = 'real_peak')
-                axarr[i].legend()
-        plt.savefig('neighbors.png')
-
-
-    def get_critic_detection(self):
-        real_peaks = ut.remove_non_beat('data/ecg/mitdb/' + name, False)[0]
-        signal, X, Y = fe.extract_features(name, 'data/ecg/mitdb/' + name, real_peaks, window_size, channels=channels,
-                                           write=False)
-        signal = signal[0]
-        peaks = knn.rpeak_detection([name], False)[name]
-        return X, Y, pd.plot_criticism(signal, name, peaks)[0]
-
-    def get_k_neighbors(self,X , Y, critic, window_size):
-        region_index = int(math.modf(critic / window_size)[1])
-        region = X[region_index]
-        model = pickle.load(open('rpeakdetection/KNN/classifiers/knn_' + name + '.pkl', 'rb'))
-        n_neighbors = model.get_params()['n_neighbors']
-        _, indexes = model.kneighbors([region], n_neighbors)
-        indexes = indexes.flatten()
-        neighbors = [X[i] for i in indexes]
-        labels = [Y[i] for i in indexes]
-        return  region, neighbors, labels
+        #print("elapsed time for a single sample:")
+        elapsed_time = elapsed_time/len(signal)
+        return elapsed_time, Y_predicted
 
 
 if __name__ == '__main__':
-    from rpeakdetection.generics.peak_detector import PeakDetector
     knn = KNN()
-    pd = PeakDetector()
-    name = '102'
-    channels = [0]
-    window_size = 100
-    test_size = 0.97
-    X, Y, critic = knn.get_critic_detection()
-    region, neighbors, labels = knn.get_k_neighbors(X, Y, critic, window_size)
-    knn.plot(region, neighbors, critic, labels)
+    knn.rpeak_detection()

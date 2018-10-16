@@ -7,7 +7,7 @@ import time
 
 class GridSearch:
 
-    def predict(self, X_train, X_test, y_train, name):
+    def predict(self, X_train, X_test, y_train, name, comb):
 
         classifier = KNeighborsClassifier()
         parameters = {
@@ -24,7 +24,10 @@ class GridSearch:
         print("training")
         grid_search.fit(X_train, y_train)
         best_classifier = grid_search.best_estimator_
-        with open('rpeakdetection/KNN/classifiers/knn_'+name+'.pkl', 'wb') as fid:
+        classifiers_path = 'rpeakdetection/KNN/classifiers/'
+        comb_name = comb[0] + '_' + comb[1] + '_' + comb[2]
+        class_name = classifiers_path + name + '_' + comb_name + '.pkl'
+        with open(class_name, 'wb') as fid:
             pickle.dump(best_classifier, fid)
         start_time = time.time()
         predicted = grid_search.predict(X_test)

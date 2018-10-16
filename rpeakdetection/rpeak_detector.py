@@ -104,8 +104,8 @@ class RPeakDetector:
                 rpeak = index
         return rpeak
 
-    def evaluate(self, rpeaks, name, evaluation_width, test_index=None):
-        real_locations = util.remove_non_beat(name)[0]
+    def evaluate(self, rpeaks, name, evaluation_width, rule_based, test_index=None):
+        real_locations = util.remove_non_beat(name, rule_based)[0]
         if test_index is not None:
             real_locations = list(filter(lambda x: x >= test_index, real_locations))
         window_size = int(evaluation_width / 2)
@@ -113,11 +113,14 @@ class RPeakDetector:
         for y in real_locations:
             Y.extend([y + q for q in range(-window_size, window_size)])
         recall = len(set(rpeaks).intersection(set(Y))) / len(real_locations)
-        precision = len(set(rpeaks).intersection(set(Y))) / len(rpeaks)
-        print("recall")
-        print(recall)
-        print("precision")
-        print(precision)
+        if len(rpeaks) != 0:
+            precision = len(set(rpeaks).intersection(set(Y))) / len(rpeaks)
+        else:
+            precision = 0
+        #print("recall")
+        #print(recall)
+        #print("precision")
+        #print(precision)
         return recall, precision
 
 

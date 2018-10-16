@@ -31,15 +31,13 @@ class Utility:
         assert len(beat_ann) == len(beat_sym)
         return beat_ann, beat_sym
 
-    def remove_non_beat_for_all(self, signals_dir):
+    def remove_non_beat_for_all(self, signals_dir, rule_based):
         symbols = dict()
         peaks = dict()
-        for signal_name in os.listdir(signals_dir):
-            if signal_name.endswith(".atr"):
-                name = signal_name.replace(".atr", "")
-                new_peaks, new_symbol = self.remove_non_beat(signals_dir + name)
-                symbols[name] = new_symbol
-                peaks[name] = new_peaks
+        for name in wfdb.get_record_list('mitdb'):
+            new_peaks, new_symbol = self.remove_non_beat(signals_dir + name, rule_based)
+            symbols[name] = new_symbol
+            peaks[name] = new_peaks
         return peaks, symbols
 
     def write_annotation_peaks_file(self, file_names_path):
