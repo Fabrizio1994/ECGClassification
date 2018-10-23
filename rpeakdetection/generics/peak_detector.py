@@ -6,6 +6,7 @@ from rpeakdetection.rpeak_detector import RPeakDetector
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from beatclassification.LabelsExtraction import LabelsExtraction
+from rpeakdetection.KNN.FeatureExtraction import FeatureExtraction
 import time
 import sys
 
@@ -13,6 +14,7 @@ PATH = 'data/ecg/mitdb/'
 util = Utility()
 rpeak = RPeakDetector()
 eval_width = 36
+fe = FeatureExtraction()
 class PeakDetector():
 
     def choose_tresholds(self, thresholds):
@@ -40,15 +42,20 @@ class PeakDetector():
         plt.savefig('prec-rec-threshold-generic.png')
         return best_threshold
 
-    def detect_peaks(self, name, thresh):
-        record = self.preprocess(name)
-        return record, peakutils.indexes(record, thres=thresh, min_dist=40)
+    def detect_peaks(self, name, thresh, filtered, channel):
+        record = self.preprocess(name, filtered, channel)
+        peaks = peakutils.indexes(record, thresh, min_dist=72)
+        return peaks
 
-    def preprocess(self, name):
-        record = wfdb.rdrecord(PATH + name, channels=[0])
+    def preprocess(self, name, filtered, channels):
+        filtered = filtered == 'FS'
+        channel = [int(channels) - 1]
+        record = wfdb.rdrecord(PATH + name, channels=channel)
         record = record.p_signal.flatten()
         record = np.abs(record)
         record = np.divide(record, np.max(record))
+        if filtered:
+            record = fe.filter(record)
         return record
 
     def plot_criticism(self, signal, name, peaks,  threshold=None):
@@ -82,17 +89,29 @@ class PeakDetector():
             return critic, real_plot
 
     def signals_evaluation(self, threshold):
-        precisions = list()
-        recalls = list()
-        for name in wfdb.get_record_list('mitdb'):
-            start_time = time.time()
-            record, indices = self.detect_peaks(name, threshold)
-            elapsed = time.time() - start_time
-            print(elapsed/len(record))
-            precision, recall = rpeak.evaluate(indices, PATH +name, eval_width, False)
-            precisions.append(precision)
-            recalls.append(recall)
-            print('{:s}, {:f}, {:f}'.format(name, precision, recall))
-        av = 'average'
-        print("{:s}, {:f}, {:f}".format(av, np.mean(precisions), np.mean(recalls)))
+        combs = [['FS', '1']]
+        results = defaultdict(list)
+        for comb in combs:
+            comb_name = comb[0]+ '_' + comb[1]
+            print(comb_name)
+            precisions = list()
+            recalls = list()
+            times = list()
+            for name in wfdb.get_record_list('mitdb'):
+                start_time = time.time()
+                peaks = self.detect_peaks(name, threshold, comb[0], comb[1])
+                elapsed = time.time() - start_time
+                elapsed = elapsed/650000
+                precision, recall = rpeak.evaluate(peaks, PATH +name, eval_width, False)
+                precisions.append(precision)
+                recalls.append(recall)
+                times.append(elapsed)
+                print('{:s}, {:f}, {:f}'.format(name, precision, recall))
+            print("{:s}, {:f}, {:f}, {:f}".format(comb_name, np.mean(precisions), np.mean(recalls), np.mean(times)))
+            results[comb_name] = [comb_name, np.mean(precisions), np.mean(recalls), np.mean(times)]
+        print(results)
+
+if __name__ == '__main__':
+    pd = PeakDetector()
+    pd.signals_evaluation(0.3)
 
