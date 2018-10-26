@@ -112,15 +112,18 @@ class RPeakDetector:
         Y = list()
         for y in real_locations:
             Y.extend([y + q for q in range(-window_size, window_size)])
-        recall = len(set(rpeaks).intersection(set(Y))) / len(real_locations)
+        filtered_peaks = list()
+        prev = 0
+        for peak in rpeaks:
+            if peak - prev > evaluation_width:
+                filtered_peaks.append(peak)
+                prev = peak
+        correct_detected = set(filtered_peaks).intersection(set(Y))
+        recall = len(correct_detected) / len(real_locations)
         if len(rpeaks) != 0:
-            precision = len(set(rpeaks).intersection(set(Y))) / len(rpeaks)
+            precision = len(correct_detected) / len(rpeaks)
         else:
             precision = 0
-        #print("recall")
-        #print(recall)
-        #print("precision")
-        #print(precision)
         return recall, precision
 
 
