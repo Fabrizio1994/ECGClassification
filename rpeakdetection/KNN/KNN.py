@@ -29,7 +29,7 @@ class KNN:
         min_dist = 72
         evaluation_window_size = 36
         approach_f = ['KNN_s']
-        channels_f = ['12', '1', '2']
+        channels_f = ['1', '2']
         filtered_f = ['FS', 'RS']
         results = defaultdict(list)
         combinations = [approach_f, channels_f, filtered_f]
@@ -85,7 +85,9 @@ class KNN:
         predicted = np.array(predicted).flatten().tolist()
         regions = list()
         region = list()
-        for p in predicted:
+        indexes = np.where(np.diff(predicted)==1)
+        regions_values = [predicted[i] for i in indexes[0]]
+        for p in regions_values:
             if p - prev == 1:
                 region.append(p)
             else:
@@ -154,4 +156,5 @@ class KNN:
 
 if __name__ == '__main__':
     knn = KNN()
-    knn.rpeak_detection(write=False, train=False)
+    names = ['103', '115', '222', '203', '108', '113', '209', '212', '123', '214', '114', '109', '124', '105', '231', '100', '230', '201', '106', '111', '202', '107', '232', '112', '213', '101', '102', '104', '205', '200', '116', '233', '220', '210', '207', '228', '119', '221', '117', '122', '219', '234', '118', '223', '208', '121', '215', '217']
+    knn.rpeak_detection(names = list(sorted(names)), write=False, train=False)
