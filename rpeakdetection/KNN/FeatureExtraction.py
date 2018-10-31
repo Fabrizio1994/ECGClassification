@@ -6,9 +6,9 @@ import pickle
 
 class FeatureExtraction:
 
-    def extract_features(self,name, path, rpeak_locations, features_comb, write):
+    def extract_features(self,name, path, rpeak_locations, features_comb, window_size=None):
         if 'KNN_w' in features_comb:
-            window_size = 100
+            window_size = window_size
         else:
             window_size = 1
         if '1' in features_comb:
@@ -30,15 +30,15 @@ class FeatureExtraction:
         comb_name = features_comb[0] + '_' + features_comb[1] + '_' + features_comb[2]
         feat_name = features_path + name + '_' + comb_name + '.pkl'
         labels_name = features_path + name + '_' + comb_name + '_labels.pkl'
-        if write:
-            features, labels = self.compute_features(record, rpeak_locations, comb=features_comb,window_size=window_size)
-            with open(feat_name, 'wb') as fid:
-                pickle.dump(features, fid)
-            with open(labels_name, 'wb') as fid:
-                pickle.dump(labels, fid)
-        else:
+        #if write:
+        features, labels = self.compute_features(record, rpeak_locations, comb=features_comb,window_size=window_size)
+            #with open(feat_name, 'wb') as fid:
+            #    pickle.dump(features, fid)
+            #with open(labels_name, 'wb') as fid:
+            #    pickle.dump(labels, fid)
+        '''else:
             features = pickle.load(open(feat_name, 'rb'))
-            labels = pickle.load(open(labels_name, 'rb'))
+            labels = pickle.load(open(labels_name, 'rb'))'''
         return record, features, labels
 
     def preprocess(self, channels, name, path):

@@ -22,34 +22,37 @@ gs = GridSearch()
 class KNN:
 
     DB = "mitdb"
+    # names = ['103', '115', '222', '203', '108', '113', '209', '212', '123', '214', '114', '109', '124', '105', '231', '100', '230', '201', '106', '111', '202', '107', '232', '112', '213', '101', '102', '104', '205', '200', '116', '233', '220', '210', '207', '228', '119', '221', '117', '122', '219', '234', '118', '223', '208', '121', '215', '217']
 
-    def rpeak_detection(self,names=None, write=True, train=True):
-        window_size = 100
-        test_size = 0.97
+    def rpeak_detection(self, window_size=None, test_size=None, names=None, combinations=None):
+        if window_size is None:
+            window_size = 50
+        if test_size is None:
+            test_size = 0.97
         min_dist = 72
         evaluation_window_size = 36
-        approach_f = ['KNN_s']
-        channels_f = ['1', '2']
+        approach_f = ['KNN_s', 'KNN_w']
+        channels_f = ['1', '2', '12']
         filtered_f = ['FS', 'RS']
         results = defaultdict(list)
-        combinations = [approach_f, channels_f, filtered_f]
+        if combinations is None:
+            combinations = [approach_f, channels_f, filtered_f]
         if names is None:
             names = wfdb.get_record_list('mitdb')
         for comb in itertools.product(*combinations):
             print(comb)
             if 'KNN_w' in comb:
-                precisions, recalls, times = self.QRS_KNN(comb, min_dist, names, test_size, train, window_size, write,
+                precisions, recalls, times = self.QRS_KNN(comb, min_dist, names, test_size, window_size,
                                                           evaluation_window_size)
             else:
-                precisions, recalls, times = self.SSK(comb, names, write, train, evaluation_window_size)
+                precisions, recalls, times = self.SSK(comb, names, evaluation_window_size)
             comb_name = comb[0] + '_' + comb[1] + '_' + comb[2]
             results[comb_name] = [np.mean(precisions), np.mean(recalls), np.mean(times)]
             print("{:s}, {:f}, {:f}, {:f}".format(comb_name, np.mean(precisions), np.mean(recalls), np.mean(times)))
         print(results)
-        with open('results_KNN.pkl', 'wb') as fid:
-            pickle.dump(results, fid)
+        return results
 
-    def QRS_KNN(self, comb, min_dist, names, test_size, train, window_size, write, evaluation_window_size):
+    def QRS_KNN(self, comb, min_dist, names, test_size, window_size, evaluation_window_size):
         recalls = list()
         precisions = list()
         times = list()
@@ -57,17 +60,17 @@ class KNN:
             path = ("data/ecg/" + self.DB + "/" + name)
             rpeak_locations = ut.remove_non_beat(path, rule_based=False)[0]
             record, X, Y = fe.extract_features(name=name, path=path, rpeak_locations=rpeak_locations,
-                                               features_comb=comb, write=write)
+                                               features_comb=comb, window_size=window_size)
             X_train, X_test, y_train, y_test = train_test_split(X, Y, shuffle=False,
                                                                     test_size=test_size)
-            if train:
-                self.start_time, predicted = gs.predict(X_train, X_test, y_train, name, comb)
-            else:
+            #if train:
+            self.start_time, predicted = gs.predict(X_train, X_test, y_train, name, comb)
+            '''else:
                 class_name = comb[0] + '_' + comb[1] + '_' + comb[2]
                 loaded_model = pickle.load(
                     open('rpeakdetection/KNN/classifiers/' + name + '_' + class_name + '.pkl', 'rb'))
                 self.start_time = time.time()
-                predicted = loaded_model.predict(X_test)
+                predicted = loaded_model.predict(X_test)'''
             test_index = len(X_train) * window_size
             elapsed_time, peaks = self.get_peaks(predicted, window_size, record, test_index, min_dist)
             recall, precision = rpd.evaluate(peaks, path, evaluation_window_size, False, test_index)
@@ -120,7 +123,7 @@ class KNN:
         elapsed_time = elapsed_time/len(signal)
         return elapsed_time, Y_predicted
 
-    def SSK(self, comb, names, write,train, evaluation_window_size):
+    def SSK(self, comb, names, evaluation_window_size):
         precisions= list()
         recalls = list()
         times = list()
@@ -128,17 +131,17 @@ class KNN:
         train_path = ("data/ecg/" + self.DB + "/100")
         train_rpeak_locations = ut.remove_non_beat(train_path, rule_based=False)[0]
         record, X_train, y_train = fe.extract_features(name='100', path=train_path, rpeak_locations=train_rpeak_locations,
-                                           features_comb=comb, write=write)
-        if train:
-            model = gs.SSK_train(X_train, y_train, comb)
-        else:
-            model =  pickle.load(open('rpeakdetection/KNN/classifiers/SSK_'+comb[1]+'_'+comb[2]+'.pkl', 'rb'))
+                                           features_comb=comb)
+        #if train:
+        model = gs.SSK_train(X_train, y_train, comb)
+        #else:
+            #model =  pickle.load(open('rpeakdetection/KNN/classifiers/SSK_'+comb[1]+'_'+comb[2]+'.pkl', 'rb'))
         # testing is performed on all the other signals
         for name in names[1:]:
             path = ("data/ecg/" + self.DB +'/'+ name)
             rpeak_locations = ut.remove_non_beat(path, rule_based=False)[0]
             record, X_test, Y_test = fe.extract_features(name=name, path=path, rpeak_locations=rpeak_locations,
-                                                 features_comb=comb, write=write)
+                                                 features_comb=comb)
             start_time = time.time()
             predicted = model.predict(X_test)
             print(sum(predicted))
@@ -153,8 +156,42 @@ class KNN:
             times.append(elapsed_time)
         return precisions, recalls, times
 
+    def compare_window_sizes(self, sizes):
+        combinations = [['KNN_w'], ['1'], ['FS']]
+        comb_name = 'KNN_w_1_FS'
+        precisions = list()
+        recalls = list()
+        for window_size in sizes:
+            result = self.rpeak_detection(window_size=window_size, combinations=combinations)
+            precision, recall, times = result[comb_name]
+            precisions.append(precision)
+            recalls.append(recall)
+        plt.plot(sizes, precisions, label='precision')
+        plt.plot(sizes, recalls, label='recall')
+        plt.xlabel('window size(samples)')
+        plt.ylabel('score')
+        best_size = sizes[int(np.argmax([x+y for x,y in zip(precisions, recalls)]))]
+        plt.plot([best_size, best_size], [0,1])
+        plt.legend()
+        plt.savefig('window_size_pr.png')
 
-if __name__ == '__main__':
-    knn = KNN()
-    names = ['103', '115', '222', '203', '108', '113', '209', '212', '123', '214', '114', '109', '124', '105', '231', '100', '230', '201', '106', '111', '202', '107', '232', '112', '213', '101', '102', '104', '205', '200', '116', '233', '220', '210', '207', '228', '119', '221', '117', '122', '219', '234', '118', '223', '208', '121', '215', '217']
-    knn.rpeak_detection(names = list(sorted(names)), write=False, train=False)
+    def compare_test_size(self, sizes):
+        combinations = [['KNN_w'], ['1'], ['FS']]
+        comb_name = 'KNN_w_1_FS'
+        precisions = list()
+        recalls = list()
+        for test_size in sizes:
+            result = self.rpeak_detection(test_size=test_size, combinations=combinations)
+            precision, recall, times = result[comb_name]
+            precisions.append(precision)
+            recalls.append(recall)
+        train_sizes=[int((1-s)*100) for s in sizes]
+        plt.plot(train_sizes, precisions, label='precision')
+        plt.plot(train_sizes, recalls, label='recall')
+        plt.xlabel('training size %')
+        plt.ylabel('score')
+        plt.legend()
+        plt.savefig('training_size_pr.png')
+
+
+
