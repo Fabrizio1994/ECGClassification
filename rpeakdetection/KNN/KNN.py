@@ -145,9 +145,9 @@ class KNN:
             start_time = time.time()
             predicted = model.predict(X_test)
             print(sum(predicted))
+            peaks = self.get_sample_peaks(predicted, record)
             elapsed_time = time.time() - start_time
             elapsed_time = elapsed_time / len(record[0])
-            peaks = self.get_sample_peaks(predicted, record)
             recall, precision = rpd.evaluate(peaks, path, evaluation_window_size, False)
             print(recall)
             print(precision)
