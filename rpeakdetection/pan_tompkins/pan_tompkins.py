@@ -1,23 +1,30 @@
 import os
 import numpy as np
-from rpeakdetection.rpeak_detector import RPeakDetector
+from rpeakdetection.pan_tompkins.rpeak_detector import RPeakDetector
+import wfdb
 rpd = RPeakDetector()
 evaluation_width = 36
-ecg_folder = "../data/ecg/mitdb/"
-peaks_folder = "../data/peaks/pan_tompkins/"
+ecg_folder = "data/ecg/mitdb/"
+peaks_folder = "data/peaks/pantompkins/mitdb/"
 precisions = list()
 recalls = list()
-for name in os.listdir(peaks_folder):
+for name in wfdb.get_record_list('mitdb'):
     peaks = list()
-    file = open(peaks_folder + name, "r")
-    name = name.replace(".tsv", "")
+    file = open(peaks_folder + name + '.tsv', "r")
+    print(name)
     for line in file:
         peak = line.replace("\n", "")
         peaks.append(int(peak))
-    precision, recall = rpd.evaluate(peaks, ecg_folder + name, evaluation_width )
+    recall, precision = rpd.evaluate(peaks, ecg_folder + name, evaluation_width, rule_based=True)
+
+    print('recall : ' + str(recall))
+    print('precision : ' + str(precision))
+
+
     precisions.append(precision)
     recalls.append(recall)
 print("av prec")
 print(np.mean(precisions))
 print("av recall")
 print(np.mean(recalls))
+

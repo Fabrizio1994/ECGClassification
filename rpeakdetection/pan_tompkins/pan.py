@@ -3,7 +3,6 @@ from scipy.interpolate import interp1d
 import peakutils
 from scipy import signal
 
-#TODO: CONTROLLARE LE SHAPE AD 1 AD 1
 class Pan:
 
     """
@@ -89,12 +88,13 @@ class Pan:
 
 
         ecg_d = signal.filtfilt(b, 1, ecg_h)
-        #print(ecg_d[:5])
+
         ecg_d = ecg_d/np.max(ecg_d)
 
         ''' Squaring nonlinearly enhance the dominant peaks '''
 
         ecg_s = ecg_d**2
+
 
         ''' Moving Average '''
         ''' Y(nT) = (1/N)[x(nT-(N-1)T) + x(nT - (N-2) T) + ... + x(nT)] '''
@@ -102,42 +102,48 @@ class Pan:
         temp_vector = np.ones((1, round(0.150*fs)))/round(0.150*fs)
         temp_vector = temp_vector.flatten()
         ecg_m = np.convolve(ecg_s, temp_vector)
+
         delay = delay + round(0.150*fs)/2
+
 
         ''' Fiducial Marks '''
         ''' Note : a minimum distance of 40 samples is considered between each R wave since in physiological
             point of view, no RR wave can occur in less than 200ms distance'''
 
 
-        #TODO: TROVARE PKS E LOCS ESATTI
-        #print(ecg_m[:10])
-        locs = peakutils.indexes(y=ecg_m)
+        locs = peakutils.indexes(y=ecg_m, thres=0, min_dist=round(0.2*fs))
         pks = []
+        new_locs = []
         for val in locs:
-            pks.append(ecg_m[val])
+            new_val = val + 1                   # TO LET MATLAB AND PYTHON BE THE SAME (ALWAYS DIFFERENT BY ONE)
+            new_locs.append(new_val)
+            pks.append(ecg_m[new_val])
+
+
+
+
 
 
         ''' Initialize Some Other Parameters '''
         LLp = len(pks)
 
         ''' Stores QRS with respect to Signal and Filtered Signal '''
-        qrs_c = np.zeros((1, LLp))           # Amplitude of R
-        qrs_i = np.zeros((1, LLp))           # index
-        qrs_i_raw = np.zeros((1, LLp))       # Amplitude of R
-        qrs_amp_raw = np.zeros((1, LLp))     # index
-
+        qrs_c = np.zeros(LLp)           # Amplitude of R
+        qrs_i = np.zeros(LLp)           # index
+        qrs_i_raw = np.zeros(LLp)       # Amplitude of R
+        qrs_amp_raw = np.zeros(LLp)     # index
         ''' Noise Buffers '''
-        nois_c = np.zeros((1, LLp))
-        nois_i = np.zeros((1, LLp))
+        nois_c = np.zeros(LLp)
+        nois_i = np.zeros(LLp)
 
         ''' Buffers for signal and noise '''
 
-        SIGL_buf = np.zeros((1, LLp))
-        NOISL_buf = np.zeros((1, LLp))
-        THRS_buf = np.zeros((1, LLp))
-        SIGL_buf1 = np.zeros((1, LLp))
-        NOISL_buf1 = np.zeros((1, LLp))
-        THRS_buf1 = np.zeros((1, LLp))
+        SIGL_buf = np.zeros(LLp)
+        NOISL_buf = np.zeros(LLp)
+        THRS_buf = np.zeros(LLp)
+        SIGL_buf1 = np.zeros(LLp)
+        NOISL_buf1 = np.zeros(LLp)
+        THRS_buf1 = np.zeros(LLp)
 
         ''' Initialize the training phase (2 seconds of the signal) to determine the THR_SIG and THR_NOISE '''
         THR_SIG = np.max(ecg_m[:2*fs])*1/3                 # 0.33 of the max amplitude
@@ -145,30 +151,36 @@ class Pan:
         SIG_LEV = THR_SIG
         NOISE_LEV = THR_NOISE
 
+
         ''' Initialize bandpath filter threshold (2 seconds of the bandpass signal) '''
         THR_SIG1 = np.max(ecg_h[:2*fs])*1/3
         THR_NOISE1 = np.mean(ecg_h[:2*fs])*1/2
         SIG_LEV1 = THR_SIG1                                 # Signal level in Bandpassed filter
         NOISE_LEV1 = THR_NOISE1                             # Noise level in Bandpassed filter
 
+
+
         ''' Thresholding and decision rule '''
 
         Beat_C = 0
         Beat_C1 = 0
         Noise_Count = 0
+        locs = new_locs                     # Just to come back to the matlab variable name
         for i in range(LLp):
             ''' Locate the corresponding peak in the filtered signal '''
             if locs[i] - round(0.150*fs) >= 1 and locs[i] <= len(ecg_h):
-                y_i = np.max(ecg_h[locs[i] - round(0.150*fs):locs[i]])
-                x_i = y_i
+
+                temp_vec = ecg_h[locs[i] - round(0.150*fs)-1:locs[i]]     # -1 since matlab works differently with indexes
+                y_i = np.max(temp_vec)
+                x_i = list(temp_vec).index(y_i)
             else:
                 if i == 1:
                     y_i = np.max(ecg_h[1:locs[i]])
-                    x_i = y_i
+                    x_i = list(ecg_h[1:locs[i]]).index(y_i)
                     ser_back = 1
                 elif locs[i] >= len(ecg_h):
                     y_i = np.max(ecg_h[locs[i] - round(0.150*fs):])
-                    x_i = y_i
+                    x_i = list(ecg_h[locs[i] - round(0.150*fs):]).index(y_i)
 
 
             ''' Update the Hearth Rate '''
@@ -193,7 +205,7 @@ class Pan:
 
             if bool(test_m):
                 if locs[i]- qrs_i[Beat_C] >= round(1.66*test_m):     # it shows a QRS is missed
-                    pks_temp = np.max(ecg_m[qrs_i[Beat_C] + round(0.2*fs):locs[i]-round(0.2*fs)])  # search back and locate the max in the interval
+                    pks_temp = np.max(ecg_m[int(qrs_i[Beat_C] + round(0.2*fs)-1):int(locs[i]-round(0.2*fs))])  # search back and locate the max in the interval
                     locs_temp = pks_temp
                     locs_temp = qrs_i[Beat_C] + round(0.2*fs) + locs_temp - 1   # location
 
@@ -205,9 +217,11 @@ class Pan:
                         ''' Locate in Filtered Signal '''
 
                         if locs_temp <= len(ecg_h):
-                            y_i_t = x_i_t = np.max(ecg_h[locs_temp-round(0.150*fs):locs_temp])
+                            y_i_t = np.max(ecg_h[int(locs_temp-round(0.150*fs)):int(locs_temp)])
+                            x_i_t = list(ecg_h[int(locs_temp - round(0.150*fs)):int(locs_temp)]).index(y_i_t)
                         else:
-                            y_i_t = x_i_t = np.max(ecg_h[locs_temp-round(0.150*fs):])
+                            y_i_t = x_i_t = np.max(ecg_h[int(locs_temp-round(0.150*fs)):])
+                            x_i_t = list(ecg_h[int(locs_temp - round(0.150*fs)):]).index(y_i_t)
 
                         ''' Band Pass Signal Threshold '''
                         if y_i_t > THR_NOISE1:
@@ -230,7 +244,7 @@ class Pan:
                 if Beat_C >= 3:
                     if locs[i] - qrs_i[Beat_C] <= round(0.36*fs):
                         Slope1 = np.mean(np.diff(ecg_m[locs[i]-round(0.075*fs):locs[i]]))          # mean slope of the waveform at that position
-                        Slope2 = np.mean(np.diff(ecg_m[qrs_i[Beat_C] - round(0.075*fs): qrs_i[Beat_C]]))        # mean slope of previous R wave
+                        Slope2 = np.mean(np.diff(ecg_m[int(qrs_i[Beat_C] - int(round(0.075*fs))) - 1 : int(qrs_i[Beat_C])]))        # mean slope of previous R wave
                         if np.abs(Slope1) <= np.abs(0.5*Slope2):                                    # slope less then 0.5 of previous R
                             Noise_Count = Noise_Count + 1
                             nois_c[Noise_Count] = pks[i]
@@ -244,6 +258,7 @@ class Pan:
                     Beat_C = Beat_C + 1
                     qrs_c[Beat_C] = pks[i]
                     qrs_i[Beat_C] = locs[i]
+
 
                     ''' Band pass Filter check threshold '''
 
@@ -311,8 +326,14 @@ class Pan:
         qrs_amp_raw = qrs_amp_raw[:Beat_C1]
         qrs_c = qrs_c[:Beat_C]
         qrs_i = qrs_i[:Beat_C]
+        qrs_i = qrs_i[1:]
+        new_qrs_i = []
+        for value in qrs_i:
+            new_value = int(value)
+            new_qrs_i.append(new_value)
 
-        return qrs_amp_raw, qrs_i_raw, delay
+
+        return qrs_amp_raw, new_qrs_i, delay
 
 
 
