@@ -2,7 +2,7 @@ import wfdb
 import peakutils
 from rpeakdetection.Utility import Utility
 import numpy as np
-from rpeakdetection.rpeak_detector import RPeakDetector
+from rpeakdetection.Evaluation import Evaluation
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from beatclassification.LabelsExtraction import LabelsExtraction
@@ -12,7 +12,7 @@ import sys
 
 PATH = 'data/ecg/mitdb/'
 util = Utility()
-rpeak = RPeakDetector()
+rpeak = Evaluation()
 eval_width = 36
 fe = FeatureExtraction()
 class PeakDetector():
@@ -42,12 +42,12 @@ class PeakDetector():
         plt.savefig('prec-rec-threshold-generic.png')
         return best_threshold
 
-    def detect_peaks(self, name, thresh, filtered, channel):
-        record = self.preprocess(name, filtered, channel)
+    def detect_peaks(self, name, thresh, filtered, channel, comb):
+        record = self.preprocess(name, filtered, channel, comb)
         peaks = peakutils.indexes(record, thresh, min_dist=72)
         return peaks
 
-    def preprocess(self, name, filtered, channels):
+    def preprocess(self, name, filtered, channels, comb):
         filtered = filtered == 'FS'
         channel = [int(channels) - 1]
         record = wfdb.rdrecord(PATH + name, channels=channel)
@@ -55,7 +55,7 @@ class PeakDetector():
         record = np.abs(record)
         record = np.divide(record, np.max(record))
         if filtered:
-            record = fe.filter(record)
+            record = fe.filter(record, comb)
         return record
 
     def plot_criticism(self, signal, name, peaks,  threshold=None):
@@ -89,7 +89,7 @@ class PeakDetector():
             return critic, real_plot
 
     def signals_evaluation(self, threshold):
-        combs = [['FS', '1']]
+        combs = [['FS', '1'], ['FS', '2'], ['RS','1'], ['RS', '2']]
         results = defaultdict(list)
         for comb in combs:
             comb_name = comb[0]+ '_' + comb[1]
@@ -99,7 +99,7 @@ class PeakDetector():
             times = list()
             for name in wfdb.get_record_list('mitdb'):
                 start_time = time.time()
-                peaks = self.detect_peaks(name, threshold, comb[0], comb[1])
+                peaks = self.detect_peaks(name, threshold, comb[0], comb[1], comb)
                 elapsed = time.time() - start_time
                 elapsed = elapsed/650000
                 precision, recall = rpeak.evaluate(peaks, PATH +name, eval_width, False)
