@@ -86,7 +86,12 @@ class FeatureExtraction:
         [a, b] = signal.butter(N, Wn, 'band')
         # filtering
         filtered = signal.filtfilt(a, b, record)
-        if 'KNN_w' in comb:
+        if 'KNN_s' in comb:
+            ecg_d = [0]
+            diff = np.diff(filtered)
+            ecg_d.extend(diff)
+            return ecg_d
+        else:
             vector = [1, 2, 0, -2, -1]
             int_c = 160 / fs
             # 5.1 since in signal 100 we must include 5
@@ -97,10 +102,6 @@ class FeatureExtraction:
             ''' Squaring nonlinearly enhance the dominant peaks '''
             ecg_s = ecg_d ** 2
             return ecg_s
-        else:
-            ecg_d = [0]
-            diff = np.diff(filtered)
-            ecg_d.extend(diff)
-            return ecg_d
+
 
 
