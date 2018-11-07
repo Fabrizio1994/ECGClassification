@@ -18,6 +18,7 @@ sig_len = 650000
 
 
 class Preprocessing():
+
     def preprocess(self, dataset_names, X_shape, filtered=False, classes=None, aami=True, one_hot=True):
         if classes is None:
             classes = ['N', 'S', 'V', 'F']
@@ -45,13 +46,11 @@ class Preprocessing():
             X[count:count + len(peaks)] = beats
             Y[count:count + len(peaks)] = labels
             count += len(peaks)
-        print(set(Y))
         return X, Y
 
     def exclude_beats(self, peaks, symbols):
         # exclude beats at the end of the signal (padding?), 21 in total
         pairs = list(filter(lambda x: 70 <= x[0] < sig_len - 100, zip(peaks, symbols)))
-        print(len(peaks) - len(pairs))
         peaks, symbols = zip(*pairs)
         return peaks, symbols
 
@@ -74,9 +73,13 @@ class Preprocessing():
             labels = one_hot_sym
         return labels
 
-    def subsample_data(self, X, Y, classes, label, factor):
-        label_data = list(filter(lambda x: np.argmax(x[1]) == classes.index(label), zip(X, Y)))
-        other_data = list(filter(lambda x: np.argmax(x[1]) != classes.index(label), zip(X, Y)))
+    def subsample_data(self, X, Y, classes, label, factor, one_hot):
+        if one_hot:
+            label_data = list(filter(lambda x: np.argmax(x[1]) == classes.index(label), zip(X, Y)))
+            other_data = list(filter(lambda x: np.argmax(x[1]) != classes.index(label), zip(X, Y)))
+        else:
+            label_data = list(filter(lambda x: x[1] == classes.index(label), zip(X, Y)))
+            other_data = list(filter(lambda x: x[1]!= classes.index(label), zip(X, Y)))
         label_X, label_Y = zip(*label_data)
         X, Y = zip(*other_data)
         sample_len = int(len(label_X) / factor)
@@ -143,3 +146,32 @@ class Preprocessing():
             Y[count: count + len(peaks)] = labels
             count += len(peaks)
         return X, Y
+
+    def segment(self, classes):
+        X = list()
+        Y=list()
+        test_dataset = ["100", "103", "105", "111", "113", "117", "121", "123", "200", "202", "210", "212", "213",
+                        "214", "219",
+                        "221", "222", "228", "231", "232", "233", "234"]
+        for name in test_dataset:
+            if name != '114':
+                channels = [0]
+            else:
+                channels = [1]
+            record = wfdb.rdrecord(ecg_path+name, channels=channels)
+            record = np.transpose(record.p_signal)
+            peaks, symbols = ut.remove_non_beat(ecg_path+name, False)
+            data = list(filter(lambda x : x[1] in classes, zip(peaks, symbols)))
+            peaks, symbols = zip(*data)
+            for i,p in enumerate(peaks[1:]):
+                left_end = peaks[i-1] + 20
+                right_end = peaks[i + 1] -20
+                beat = record[left_end:right_end]
+                label = symbols[i]
+                index = classes.index(label)
+                X.append(beat)
+                Y.append(index)
+        print(len(X))
+        print(len(Y))
+        print(set(Y))
+

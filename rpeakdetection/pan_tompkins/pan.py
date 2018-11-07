@@ -1,7 +1,10 @@
 import numpy as np
 from scipy.interpolate import interp1d
+import time
 import peakutils
 from scipy import signal
+import itertools
+import wfdb
 
 class Pan:
 
@@ -340,6 +343,32 @@ class Pan:
 
 
 
+    def rpeak_detection(self):
+        channels_f = ['1', '2']
+        filtered_f = ['RS', 'FS']
+        combinations = [channels_f, filtered_f]
+        ecg_path = 'data/ecg/mitdb/'
+        fs = 360
+        sig_len = 650000
+        times = dict()
+        for comb in itertools.product(*combinations):
+            print(comb)
+            channels = [int(comb[0]) - 1]
+            for name in wfdb.get_record_list('mitdb'):
+                print(name)
+                record = wfdb.rdrecord(ecg_path+name, channels = channels)
+                record = np.transpose(record.p_signal)
+                record = record[0]
+                filtered = 'FS' in comb[1]
+                start = time.time()
+                self.pan_tompkin(record, fs, filtered)
+                elapsed = time.time() - start
+                times[comb[0]+comb[1]] = elapsed/sig_len
+        print(times)
+
+if __name__ == '__main__':
+    pan = Pan()
+    pan.rpeak_detection()
 
 
 
