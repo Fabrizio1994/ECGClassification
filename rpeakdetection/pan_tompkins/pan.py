@@ -110,17 +110,17 @@ class Pan:
         ''' Note : a minimum distance of 40 samples is considered between each R wave since in physiological
             point of view, no RR wave can occur in less than 200ms distance'''
 
-
         if filtered:
-            locs = peakutils.indexes(y=ecg_m, thres=0, min_dist=round(0.2 * fs))
-        else:
-            locs = peakutils.indexes(y=ecg, thres=0, min_dist=round(0.2 * fs))
+            ecg_m = ecg
         pks = []
         new_locs = []
+        locs = peakutils.indexes(y=ecg_m, thres=0, min_dist=round(0.2*fs))
         for val in locs:
-            new_val = val + 1                   # TO LET MATLAB AND PYTHON BE THE SAME (ALWAYS DIFFERENT BY ONE)
+            new_val = val + 1
             new_locs.append(new_val)
             pks.append(ecg_m[new_val])
+
+
 
 
 
@@ -172,7 +172,6 @@ class Pan:
         for i in range(LLp):
             ''' Locate the corresponding peak in the filtered signal '''
             if locs[i] - round(0.150*fs) >= 1 and locs[i] <= len(ecg_h):
-
                 temp_vec = ecg_h[locs[i] - round(0.150*fs)-1:locs[i]]     # -1 since matlab works differently with indexes
                 y_i = np.max(temp_vec)
                 x_i = list(temp_vec).index(y_i)
