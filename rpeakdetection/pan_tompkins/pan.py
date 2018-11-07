@@ -19,7 +19,7 @@ class Pan:
             delay : number of samples which the signal is delayed due to the filtering
 
         """
-    def pan_tompkin(self, ecg, fs):
+    def pan_tompkin(self, ecg, fs, filtered):
 
         ''' Initialize '''
 
@@ -111,7 +111,10 @@ class Pan:
             point of view, no RR wave can occur in less than 200ms distance'''
 
 
-        locs = peakutils.indexes(y=ecg_m, thres=0, min_dist=round(0.2*fs))
+        if filtered:
+            locs = peakutils.indexes(y=ecg_m, thres=0, min_dist=round(0.2 * fs))
+        else:
+            locs = peakutils.indexes(y=ecg, thres=0, min_dist=round(0.2 * fs))
         pks = []
         new_locs = []
         for val in locs:
@@ -174,7 +177,7 @@ class Pan:
                 y_i = np.max(temp_vec)
                 x_i = list(temp_vec).index(y_i)
             else:
-                if i == 1:
+                if i == 0:
                     y_i = np.max(ecg_h[1:locs[i]])
                     x_i = list(ecg_h[1:locs[i]]).index(y_i)
                     ser_back = 1
@@ -204,7 +207,7 @@ class Pan:
                 test_m = 0
 
             if bool(test_m):
-                if locs[i]- qrs_i[Beat_C] >= round(1.66*test_m):     # it shows a QRS is missed
+                if locs[i] - qrs_i[Beat_C] >= round(1.66*test_m):     # it shows a QRS is missed
                     pks_temp = np.max(ecg_m[int(qrs_i[Beat_C] + round(0.2*fs)-1):int(locs[i]-round(0.2*fs))])  # search back and locate the max in the interval
                     locs_temp = pks_temp
                     locs_temp = qrs_i[Beat_C] + round(0.2*fs) + locs_temp - 1   # location
@@ -220,7 +223,7 @@ class Pan:
                             y_i_t = np.max(ecg_h[int(locs_temp-round(0.150*fs)):int(locs_temp)])
                             x_i_t = list(ecg_h[int(locs_temp - round(0.150*fs)):int(locs_temp)]).index(y_i_t)
                         else:
-                            y_i_t = x_i_t = np.max(ecg_h[int(locs_temp-round(0.150*fs)):])
+                            y_i_t = np.max(ecg_h[int(locs_temp-round(0.150*fs)):])
                             x_i_t = list(ecg_h[int(locs_temp - round(0.150*fs)):]).index(y_i_t)
 
                         ''' Band Pass Signal Threshold '''
@@ -284,6 +287,7 @@ class Pan:
                 Noise_Count = Noise_Count + 1
                 nois_c[Noise_Count] = pks[i]
                 nois_i[Noise_Count] = locs[i]
+
                 NOISE_LEV1 = 0.125*y_i +0.875 *NOISE_LEV1
                 NOISE_LEV = 0.125*pks[i] + 0.875*NOISE_LEV
 
