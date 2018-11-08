@@ -4,6 +4,9 @@ import numpy as np
 from collections import defaultdict
 import random
 from scipy import signal
+from scipy.signal import medfilt
+from collections import defaultdict
+from sklearn.preprocessing import StandardScaler
 
 ut = Utility()
 ecg_path = 'data/ecg/mitdb/'
@@ -38,8 +41,7 @@ class Preprocessing():
             # noinspection PyArgumentList
             record = np.transpose(record.p_signal)
             record = record[0]
-            if filtered:
-                record = self.filter(record[0])
+            record = self.remove_baseline(record)
             peaks, symbols = self.exclude_beats(peaks, symbols)
             labels = self.extract_labels(aami, classes, one_hot, symbols)
             beats = [record[p - 70:p + 100] for p in peaks]
@@ -79,7 +81,7 @@ class Preprocessing():
             other_data = list(filter(lambda x: np.argmax(x[1]) != classes.index(label), zip(X, Y)))
         else:
             label_data = list(filter(lambda x: x[1] == classes.index(label), zip(X, Y)))
-            other_data = list(filter(lambda x: x[1]!= classes.index(label), zip(X, Y)))
+            other_data = list(filter(lambda x: x[1] != classes.index(label), zip(X, Y)))
         label_X, label_Y = zip(*label_data)
         X, Y = zip(*other_data)
         sample_len = int(len(label_X) / factor)
@@ -116,7 +118,7 @@ class Preprocessing():
         filtered = signal.filtfilt(a, b, channel)
         return filtered
 
-    def read_image(self, dataset_names, X_shape, filtered, classes=None, one_hot=True, aami=True):
+    def read_image(self, dataset_names, X_shape, classes=None, one_hot=True, aami=True):
         if classes is None:
             classes = ['N', 'S', 'V', 'F']
         X = np.empty(X_shape)
@@ -126,11 +128,11 @@ class Preprocessing():
             Y = np.empty(X_shape[0], dtype='int8')
         count = 0
         for name in dataset_names:
+            print(name)
             record = wfdb.rdrecord(ecg_path + name, channels=[0, 1])
             record = np.transpose(record.p_signal)
-            if filtered:
-                for i in range(len(record)):
-                    record[i] = self.filter(record[i])
+            # for i in range(len(record)):
+                # record[i] = self.remove_baseline(record[i])
             peaks, symbols = ut.remove_non_beat(ecg_path + name, False)
             peaks, symbols = self.exclude_beats(peaks, symbols)
             labels = self.extract_labels(aami=aami, classes=classes, one_hot=one_hot, symbols=symbols)
@@ -140,7 +142,7 @@ class Preprocessing():
                 for i in range(len(record)):
                     channel = record[i]
                     beat_data = channel[p - 70:p + 100]
-                    beat[i] = np.reshape(beat_data, (beat.shape[1],beat.shape[2]))
+                    beat[i] = np.reshape(beat_data, (beat.shape[1], beat.shape[2]))
                 beats[index] = beat
             X[count: count + len(peaks)] = beats
             Y[count: count + len(peaks)] = labels
@@ -149,23 +151,22 @@ class Preprocessing():
 
     def segment(self, classes):
         X = list()
-        Y=list()
-        test_dataset = ["100", "103", "105", "111", "113", "117", "121", "123", "200", "202", "210", "212", "213",
-                        "214", "219",
-                        "221", "222", "228", "231", "232", "233", "234"]
-        for name in test_dataset:
+        Y = list()
+        for name in ['232']:
             if name != '114':
                 channels = [0]
             else:
                 channels = [1]
-            record = wfdb.rdrecord(ecg_path+name, channels=channels)
+            record = wfdb.rdrecord(ecg_path + name, channels=channels)
             record = np.transpose(record.p_signal)
-            peaks, symbols = ut.remove_non_beat(ecg_path+name, False)
-            data = list(filter(lambda x : x[1] in classes, zip(peaks, symbols)))
+            record = record[0]
+            record = self.remove_baseline(record)
+            peaks, symbols = ut.remove_non_beat(ecg_path + name, rule_based=False, include_VF=True)
+            data = list(filter(lambda x: x[1] in classes, zip(peaks, symbols)))
             peaks, symbols = zip(*data)
-            for i,p in enumerate(peaks[1:]):
-                left_end = peaks[i-1] + 20
-                right_end = peaks[i + 1] -20
+            for i, p in enumerate(peaks[1:-1], start=1):
+                left_end = peaks[i - 1] + 20
+                right_end = peaks[i + 1] - 20
                 beat = record[left_end:right_end]
                 label = symbols[i]
                 index = classes.index(label)
@@ -174,4 +175,25 @@ class Preprocessing():
         print(len(X))
         print(len(Y))
         print(set(Y))
+        return X, Y
 
+    def remove_baseline(self, record):
+        # 200 ms -> 71 samples with fs=360
+        baseline = medfilt(record, 71)
+        # 600 ms -> 215 samples with fs=360
+        baseline = medfilt(baseline, 215)
+        # remove baseline wander
+        record = np.subtract(record, baseline)
+        return record
+
+    def standardize(self, X):
+        if len(X.shape) == 2:
+            scalers = StandardScaler()
+            scalers.fit(X)
+            scaled = scalers.transform(X)
+            return scaled, scalers
+        else:
+            mean = np.mean(X, axis =(1,2), keepdims=True)
+            std = np.std(X, axis=(1,2), keepdims=True)
+            standardized = (X -mean)/std
+            return standardized
