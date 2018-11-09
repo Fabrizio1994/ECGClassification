@@ -22,7 +22,7 @@ sig_len = 650000
 
 class Preprocessing():
 
-    def preprocess(self, dataset_names, X_shape, filtered=False, classes=None, aami=True, one_hot=True):
+    def preprocess(self, dataset_names, X_shape, filtered=False, classes=None, aami=True, one_hot=True, timesteps=None):
         if classes is None:
             classes = ['N', 'S', 'V', 'F']
         X = np.empty(X_shape)
@@ -48,7 +48,19 @@ class Preprocessing():
             X[count:count + len(peaks)] = beats
             Y[count:count + len(peaks)] = labels
             count += len(peaks)
+        if timesteps is not None:
+            X, Y  = self.compute_timesteps(X,Y, timesteps)
         return X, Y
+
+    def compute_timesteps(self, X, Y, timesteps):
+        end_beats = timesteps -1
+        start_label = end_beats
+        windowed = np.zeros((X.shape[0] - end_beats, timesteps, X.shape[1]))
+        for i in range(len(X) - end_beats):
+            window = [X[w] for w in range(i, i + timesteps)]
+            windowed[i] = window
+        labels = Y[start_label:]
+        return windowed, labels
 
     def exclude_beats(self, peaks, symbols):
         # exclude beats at the end of the signal (padding?), 21 in total
