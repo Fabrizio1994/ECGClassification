@@ -12,7 +12,6 @@ from collections import defaultdict
 from sklearn.model_selection import train_test_split
 import time
 import math
-rpd = RPeakDetector()
 ut = Utility()
 eval = Evaluation()
 fe = FeatureExtraction()
@@ -73,7 +72,7 @@ class KNN:
                 predicted = loaded_model.predict(X_test)'''
             test_index = len(X_train) * window_size
             elapsed_time, peaks = self.get_peaks(predicted, window_size, record, test_index, min_dist)
-            recall, precision = rpd.evaluate(peaks, path, evaluation_window_size, False, test_index)
+            recall, precision = eval.evaluate(peaks, path, evaluation_window_size, False, test_index)
             print(recall)
             print(precision)
             recalls.append(recall)
@@ -148,7 +147,7 @@ class KNN:
             peaks = self.get_sample_peaks(predicted, record)
             elapsed_time = time.time() - start_time
             elapsed_time = elapsed_time / len(record[0])
-            recall, precision = rpd.evaluate(peaks, path, evaluation_window_size, False)
+            recall, precision = eval.evaluate(peaks, path, evaluation_window_size, False)
             print(recall)
             print(precision)
             recalls.append(recall)
