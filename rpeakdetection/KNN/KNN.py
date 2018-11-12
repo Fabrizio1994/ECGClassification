@@ -4,7 +4,6 @@ from rpeakdetection.KNN.GridSearch import GridSearch
 from rpeakdetection.KNN.FeatureExtraction import FeatureExtraction
 from rpeakdetection.Evaluation import Evaluation
 from rpeakdetection.Utility import Utility
-from rpeakdetection.rpeak_detector import RPeakDetector
 import matplotlib.pyplot as plt
 import pickle
 import itertools
