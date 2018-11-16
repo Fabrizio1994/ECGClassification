@@ -230,7 +230,7 @@ for i = 1 : LLp
         
     if test_m
           if (locs(i) - qrs_i(Beat_C)) >= round(1.66*test_m)                  % it shows a QRS is missed 
-              [pks_temp,locs_temp] = max(ecg_m(qrs_i(Beat_C)+ round(0.200*fs):locs(i)-round(0.200*fs))); % search back and locate the max in this interval
+             [pks_temp,locs_temp] = max(ecg_m(qrs_i(Beat_C)+ round(0.200*fs):locs(i)-round(0.200*fs))); % search back and locate the max in this interval
               locs_temp = qrs_i(Beat_C)+ round(0.200*fs) + locs_temp -1;      % location 
              
               if pks_temp > THR_NOISE
