@@ -29,14 +29,20 @@ class data_visualization():
             peaks, symbols = ut.remove_non_beat(ecg_path + name, False)
             s_pairs = list(filter(lambda x: x[1] == label, zip(peaks, symbols)))
             s_beats_first = [record[0][pair[0] - 70:pair[0] + 100] for pair in s_pairs]
-            s_beats_second = [record[1][pair[0] - 70:pair[0] + 100] for pair in s_pairs]
             if len(s_beats_first) > 0:
-                print(len(s_beats_first))
-                plt.plot(np.mean(s_beats_first, axis=0), label='first')
-                plt.plot(np.mean(s_beats_second, axis=0), label='second')
-                plt.legend()
-                plt.savefig(name)
-                plt.close()
+                for beat in s_beats_first:
+                    plt.plot(beat)
+        plt.title(label)
+        plt.show()
+
+    def plot_beats_dataset(self, X, Y, dataset_name, label_index, one_hot=True):
+        if one_hot:
+            Y = list(map(lambda x : np.argmax(x), Y))
+        s_pairs = list(filter(lambda x: x[1] == label_index, zip(X, Y)))
+        s_beats, _ = zip(*s_pairs)
+        plt.plot(np.mean(s_beats, axis=0))
+        plt.savefig('beatclassification/beat_images/'+dataset_name+ ' average S beat.png')
+        plt.close()
 
     def data_distribution(self, dataset, aami):
         from collections import defaultdict
@@ -59,6 +65,20 @@ class data_visualization():
             symbol = classes[index]
             distribution[symbol] += 1
         return distribution
+
+    def plot_wrong_predictions( self, predicted, target, beats):
+        s_wrong = list(filter(lambda x: x[ 0 ] == 0 and x[ 1 ] == 1, zip(predicted, target, beats)))
+        print(len(s_wrong))
+        _, _, wrong_beats = zip(*s_wrong)
+        wrong_beats = list(map(lambda x: x[ -1 ], wrong_beats))
+        plt.close()
+        for beat in wrong_beats:
+            plt.plot(beat)
+        plt.title('wrong classified S beats')
+        plt.show()
+        plt.close()
+
+
 
 if __name__ == '__main__':
     train_dataset = ['106', '112', '122', '201', '223', '230', "108", "109", "115", "116", "118", "119", "124",
