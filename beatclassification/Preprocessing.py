@@ -7,7 +7,6 @@ import random
 from scipy import signal
 from scipy.signal import medfilt
 from collections import defaultdict
-from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler
 
 ut = Utility()
@@ -17,7 +16,7 @@ symbol2class = {"N": "N", "L": "N",  "e": "N", "j": "N", "R": "N",
                 "A": "S", "a": "S", "J": "S", "S": "S",
                 "V": "V", "E": "V",
                 "F": "F"}
-# '/': 'Q', 'f': 'Q', 'Q': 'Q'}
+                #, '/': 'Q', 'f': 'Q', 'Q': 'Q'}
 
 sig_len = 650000
 
@@ -28,7 +27,7 @@ class Preprocessing():
         if classes is None:
             classes = ['N', 'S', 'V', 'F']
         X_shape = self.compute_shape(dataset_names)
-        X_shape = (X_shape, 170)
+        X_shape = (X_shape, 170*len(channels))
         X = np.empty(X_shape)
         if one_hot:
             Y = np.empty((X_shape[0], len(classes)))
@@ -55,9 +54,10 @@ class Preprocessing():
             record = wfdb.rdrecord(ecg_path + name, channels=channels)
         peaks, symbols = ut.remove_non_beat(ecg_path + name, False)
         record = np.transpose(record.p_signal)
-        for id in range(len(record)):
-            record[id] = self.filter(record[id])
-        peaks, symbols = self.exclude_beats(peaks, symbols)
+        if filtered:
+            for id in range(len(record)):
+                record[id] = self.filter(record[id])
+        peaks, symbols = self.exclude_out_of_range(peaks, symbols)
         labels = self.extract_labels(aami, classes, one_hot, symbols)
         if model == 'LSTM':
             beats = self.extract_beats(channels, peaks, record)
@@ -86,29 +86,40 @@ class Preprocessing():
         labels = Y[start_label:]
         return windowed, labels
 
-    def exclude_beats(self, peaks, symbols):
-        # exclude beats at the end of the signal (padding?), 21 in total
-        pairs = list(filter(lambda x: 70 <= x[0] < sig_len - 100, zip(peaks, symbols)))
+    def exclude_out_of_range( self, peaks, symbols ):
+        # exclude beats at the end of the signal (padding?), 21 in total. Excludes also beats out of the scope of study
+        pairs = list(filter(lambda x: 70 <= x[0] < sig_len - 100 , zip(peaks, symbols)))
         peaks, symbols = zip(*pairs)
         return peaks, symbols
 
     def extract_labels(self, aami, classes, one_hot, symbols):
         symbols = list(symbols)
         labels = np.zeros(len(symbols), dtype='int8')
+        if one_hot:
+            labels = np.zeros((len(symbols), len(classes)))
+            return self.one_hot_labels(labels, symbols, aami, classes)
         for i in range(len(symbols)):
+            # exclude 15 unclassifiable beats
+            if symbols[ i ] in symbol2class.keys():
+                if aami:
+                    classe = symbol2class[symbols[i]]
+                    label = classes.index(classe)
+                    labels[i] = label
+                else:
+                    labels[i] = classes.index(symbols[i])
+        return labels
+
+    def one_hot_labels(self, labels, symbols, aami, classes):
+        for i in range(len(symbols)):
+            # exclude 15 unclassifiable beats
             if symbols[i] in symbol2class.keys():
                 if aami:
                     classe = symbol2class[symbols[i]]
-                    labels[i] = classes.index(classe)
+                    label = classes.index(classe)
+                    labels[i][label] = 1
                 else:
-                    labels[i] = classes.index(symbols[i])
-            else:
-                labels[i] = 0
-        if one_hot:
-            one_hot_sym = np.zeros((len(symbols), len(classes)))
-            for one_hot, sym in zip(one_hot_sym, labels):
-                one_hot[sym] = 1
-            labels = one_hot_sym
+                    label = classes.index[symbols[i]]
+                    labels[i][label] = 1
         return labels
 
     def subsample_data(self, X, Y, classes, label, factor, one_hot):
@@ -136,8 +147,8 @@ class Preprocessing():
             label_data = list(filter(lambda x: x[1] == classe, zip(X, Y)))
         label_X, label_Y = zip(*label_data)
         for i in range(factor - 1):
-            X = np.concatenate((X, label_X))
-            #X = np.concatenate((X, list(map(lambda x: x + random.random(), label_X))))
+            # X = np.concatenate((X, label_X))
+            X = np.concatenate((X, list(map(lambda x: x + random.random(), label_X))))
             Y = np.concatenate((Y, label_Y))
         return X, Y
 
@@ -175,7 +186,7 @@ class Preprocessing():
             # for i in range(len(record)):
                 # record[i] = self.remove_baseline(record[i])
             peaks, symbols = ut.remove_non_beat(ecg_path + name, False)
-            peaks, symbols = self.exclude_beats(peaks, symbols)
+            peaks, symbols = self.exclude_out_of_range(peaks, symbols)
             labels = self.extract_labels(aami=aami, classes=classes, one_hot=one_hot, symbols=symbols)
             beats = self.image_beats(peaks, record)
             self.train_val_test_split(X_test, X_train, X_val, Y_test, Y_train, Y_val, beats, labels, peaks, train_size)
@@ -236,13 +247,13 @@ class Preprocessing():
         count = 0
         for name in dataset_names:
             peaks, symbols = ut.remove_non_beat(ecg_path+name, rule_based=False)
-            peaks, symbol = self.exclude_beats(peaks, symbols)
+            peaks, symbol = self.exclude_out_of_range(peaks, symbols)
             count+= len(peaks)
         return count
 
     def preprocess_split(self, train_size, timesteps, channels=None, standardize=True, classes=None, aami=True, model=None,
-                         filtered=False):
-        if channels == None:
+                         filtered=False, one_hot=True):
+        if channels is None:
             channels = [0]
         if classes is None:
             classes = ['N', 'S', 'V', 'F']
@@ -260,10 +271,7 @@ class Preprocessing():
         Y_test = list()
         for name in names:
             beats, labels, peaks = self.extract_labeled_beats(aami=aami, classes=classes, name=name,
-                                                              one_hot=True, channels=channels, model=model, filtered=filtered)
-
-
-            # beats = beats / beats.max()
+                                                              one_hot=one_hot, channels=channels, model=model, filtered=filtered)
             self.train_val_test_split(X_test, X_train, X_val, Y_test, Y_train, Y_val,
                                       beats, labels, peaks, train_size)
         X_train = np.array(X_train)
@@ -272,7 +280,6 @@ class Preprocessing():
         Y_train = np.array(Y_train)
         Y_val = np.array(Y_val)
         Y_test = np.array(Y_test)
-        X_train, Y_train = shuffle(X_train, Y_train)
         if standardize:
             X_train, X_val, X_test = self.standardize(X_train, X_val, X_test)
         if timesteps is not None:
@@ -285,12 +292,15 @@ class Preprocessing():
     def train_val_test_split(self, X_test, X_train, X_val, Y_test, Y_train, Y_val, beats, labels, peaks, train_size):
         val_size = 0.1
         train_index = int(len(peaks) * train_size)
-        X_train.extend(beats[:train_index])
-        Y_train.extend(labels[:train_index])
         val_index = int(len(peaks) * val_size)
         val_index = train_index + val_index
+        X_train.extend(beats[:train_index])
+        Y_train.extend(labels[:train_index])
         X_val.extend(beats[train_index: val_index])
         Y_val.extend(labels[train_index:val_index])
         X_test.extend(beats[val_index:])
         Y_test.extend(labels[val_index:])
+
+
+
 

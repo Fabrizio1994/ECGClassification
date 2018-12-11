@@ -4,6 +4,7 @@ from keras.models import Sequential
 from keras import backend as K
 import numpy as np
 import tensorflow as tf
+from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
 import scikitplot as splt
 from time import time
@@ -13,6 +14,8 @@ from keras.callbacks import Callback, EarlyStopping, TensorBoard
 from sklearn.metrics import f1_score, precision_score, recall_score
 from beatclassification.Preprocessing import Preprocessing
 from sklearn.model_selection import train_test_split
+from keras.models import load_model
+
 
 dv = data_visualization()
 prep = Preprocessing()
@@ -92,10 +95,17 @@ class Evaluation(Callback):
         print('average recall')
         av_recall = np.mean(recall)
         print(av_recall)
+        print('per class f score')
+        fscore = f1_score(Y_test, predictions, average=None)
+        print(fscore)
+        av_fscore = np.mean(fscore)
+        print('average fscore')
+        print(av_fscore)
+
         if plot:
             plt.show()
             plt.close()
-        return precision[ 1 ], recall[ 1 ], precision[ 3 ], recall[ 3 ]
+        return av_fscore
 
 
 class NN:
@@ -121,7 +131,7 @@ class NN:
                              "221", "222", "228", "231", "232", "233", "234" ]
             X_train, Y_train = prep.preprocess(train_dataset, channels, model=model, timesteps=timesteps)
             X_test, Y_test = prep.preprocess(test_dataset, channels, model=model, timesteps=timesteps)
-            _, X_val, _, Y_val = train_test_split(X_test, Y_test, test_size=0.1)
+            X_test, X_val, Y_test, Y_val = train_test_split(X_test, Y_test, test_size=0.1)
         dv.distribution(Y_train, classes=classes)
         if reduce is not None:
             for label in reduce:
@@ -137,6 +147,7 @@ class NN:
                 if augment_factor > 1:
                     X_train, Y_train = prep.augment_data(X_train, Y_train, classes, label, augment_factor,
                                                          one_hot=True)
+        X_train, Y_train = shuffle(X_train, Y_train)
         print('train distribution')
         print(dv.distribution(Y_train, classes))
         print('val distribution')
@@ -185,7 +196,7 @@ class NN:
         model.compile(loss='categorical_crossentropy',
                       optimizer=optimizer)
         model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val, Y_val),
-                  callbacks=callbacks)
+                  callbacks=None, sample_weight=None)
         return model
 
     def create_CNN_model( self, X_train, X_val, Y_train, Y_val, aami_classes, callbacks, n_dense_layers, batch_size,
@@ -214,49 +225,66 @@ class NN:
 
     def beat_classification( self, classes=None, aami=True ):
         if classes is None:
-            classes = [ 'N', 'S', 'V', 'F' ]
-        augment = {'S': 3, 'F': 7}
-        reduce = None
+            classes = [ 'N', 'S', 'V', 'F']
+        augment = {'S' : 4, 'F':9}
+        reduce = {'N' :10}
         train_size = 0.5
-        channels = [0]
-        n_dense_layers = 1
+        channels = [0, 1]
+        n_dense_layers = 3
         batch_size = 32
         standardize = True
         activation = 'relu'
         timesteps = 5
         n_neurons = 256
-        filtered = True
+        filtered = False
         width = 2
         model_name = 'LSTM'
         epochs = 100
         metrics = Evaluation()
         dropout = 0.5
-        n_LSTM_layers = 1
+        split= 'horizontal'
+        n_LSTM_layers = 5
         callbacks = [ EarlyStopping(patience=10, restore_best_weights=True) ]
         optimizer = SGD()
         batch_normalization = True
-        X_train, Y_train, X_val, Y_val, X_test, Y_test = self.preprocess(classes, augment, reduce,
-                                                                         timesteps, train_size,
-                                                                         channels=channels,
-                                                                         standardize=standardize, aami=aami,
-                                                                         model=model_name, split='vertical',
-                                                                         filtered=filtered)
-        if model_name == 'LSTM':
-            model = self.create_LSTM_model(X_train, X_val, Y_train, Y_val, classes, callbacks, n_LSTM_layers,
-                                           n_dense_layers, batch_size,
-                                           activation, timesteps, n_neurons, optimizer, batch_normalization, epochs,
-                                           dropout)
-        else:
-            model = self.create_CNN_model(X_train, X_val, Y_train, Y_val, aami_classes=classes,
-                                          n_dense_layers=n_dense_layers,
-                                          batch_size=batch_size, activation=activation, n_neurons=n_neurons,
-                                          batch_normalization=batch_normalization, callbacks=callbacks, width=width,
-                                          optimizer=optimizer,
-                                          epochs=epochs)
-        predictions = model.predict(X_test, batch_size=32)
-        metrics.evaluate(predictions, Y_test, title='result on test set', plot=True)
-        self.export_model(tf.train.Saver(), [ model_name.lower() + '_1_input' ], 'dense_2/Softmax', model_name)
-        model.save('lstm.h5')
+        best_score = 0
+        best_comb_name = ''
+        for reduce in [None, {'N':11}]:
+            for n_LSTM_layers in [1, 4]:
+                for n_dense_layers in [0, 1, 4]:
+                    X_train, Y_train, X_val, Y_val, X_test, Y_test = self.preprocess(classes, augment, reduce,
+                                                                                     timesteps, train_size,
+                                                                                     channels=channels,
+                                                                                     standardize=standardize, aami=aami,
+                                                                                     model=model_name, split=split,
+                                                                                     filtered=filtered)
+                    if model_name == 'LSTM':
+                        model = self.create_LSTM_model(X_train, X_val, Y_train, Y_val, classes, callbacks, n_LSTM_layers,
+                                                       n_dense_layers, batch_size,
+                                                       activation, timesteps, n_neurons, optimizer, batch_normalization, epochs,
+                                                       dropout)
+                    else:
+                        model = self.create_CNN_model(X_train, X_val, Y_train, Y_val, aami_classes=classes,
+                                                      n_dense_layers=n_dense_layers,
+                                                      batch_size=batch_size, activation=activation, n_neurons=n_neurons,
+                                                      batch_normalization=batch_normalization, callbacks=callbacks, width=width,
+                                                      optimizer=optimizer,
+                                                      epochs=epochs)
+                    predictions = model.predict(X_val, batch_size=32)
+                    fscore = metrics.evaluate(predictions, Y_val, plot=False)
+                    if fscore > best_score:
+                        model.save('best.h5')
+                        best_score = fscore
+                        best_comb_name = str(reduce) + str(n_LSTM_layers) +str(n_dense_layers)
+                    print("best score till now")
+                    print(best_score)
+                    print(best_comb_name)
+                    del model
+        del model
+        best_model = load_model('best.h5')
+        predictions = best_model.predict(X_test, batch_size=32)
+        metrics.evaluate(predictions, Y_test, title=best_comb_name, plot=True)
+        #self.export_model(tf.train.Saver(), [ model_name.lower() + '_1_input' ], 'dense_2/Softmax', model_name)
 
     def export_model( self, saver, input_node_names, output_node_name, model_name ):
         tf.train.write_graph(K.get_session().graph_def, 'out', model_name + '_graph.pbtxt')
