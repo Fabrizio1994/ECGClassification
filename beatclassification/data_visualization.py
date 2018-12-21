@@ -57,11 +57,14 @@ class data_visualization():
         print(sorted_by_value)
         return distribution
 
-    def distribution(self, Y, classes):
+    def distribution(self, Y,  classes, multiclass=True):
         from collections import defaultdict
         distribution = defaultdict(int)
         for one_hot in Y:
-            index = np.argmax(one_hot)
+            if multiclass:
+                index = np.argmax(one_hot)
+            else:
+                index= int(one_hot[0])
             symbol = classes[index]
             distribution[symbol] += 1
         return distribution

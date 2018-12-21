@@ -1,11 +1,12 @@
 from keras.optimizers import Adam, SGD
-from keras.layers import LSTM, Dense, BatchNormalization, Dropout, Conv2D, Flatten
+from keras.layers import LSTM, Dense, BatchNormalization, Dropout, Conv2D, Flatten, Embedding
 from keras.models import Sequential
 from keras import backend as K
 import numpy as np
 import tensorflow as tf
 from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
+import wfdb
 import scikitplot as splt
 from time import time
 from beatclassification.data_visualization import data_visualization
@@ -13,154 +14,29 @@ from tensorflow.python.tools import freeze_graph, optimize_for_inference_lib
 from keras.callbacks import Callback, EarlyStopping, TensorBoard
 from sklearn.metrics import f1_score, precision_score, recall_score
 from beatclassification.Preprocessing import Preprocessing
-from sklearn.model_selection import train_test_split
+from beatclassification.Evaluation import Evaluation
 from keras.models import load_model
 
 
 dv = data_visualization()
 prep = Preprocessing()
+eval = Evaluation()
 
 
-class Evaluation(Callback):
-    def __init__( self, plot=False, patience=None, plot_every=1 ):
-        super().__init__()
-        self.plot = plot
-        self.epoch_count = 0
-        self.plot_every = plot_every
-        self.patience = patience
-        self.patience_count = 0
-        self.prev = 0
-
-    def on_train_begin( self, logs={} ):
-        self.val_s_recall = [ ]
-        self.val_s_precision = [ ]
-        self.val_f_recall = [ ]
-        self.val_f_precision = [ ]
-
-    def on_epoch_end( self, epoch, logs={} ):
-        self.epoch_count += 1
-        val_predict = (np.asarray(self.model.predict(self.validation_data[ 0 ]))).round()
-        val_targ = self.validation_data[ 1 ]
-        _val_class_recall = recall_score(val_targ, val_predict, average=None)
-        _val_class_precision = precision_score(val_targ, val_predict, average=None)
-        class_s_recall = _val_class_recall[ 1 ]
-        self.val_s_recall.append(class_s_recall)
-        class_s_precision = _val_class_precision[ 1 ]
-        self.val_s_precision.append(class_s_precision)
-        class_f_recall = _val_class_recall[ 3 ]
-        self.val_f_recall.append(class_f_recall)
-        class_f_precision = _val_class_precision[ 3 ]
-        self.val_f_precision.append(class_f_precision)
-        average = (class_s_precision + class_s_recall + class_f_recall + class_f_precision) / 4
-
-        if average < self.prev:
-            self.patience_count += 1
-            if self.patience_count == self.patience:
-                self.model.stop_training = True
-        else:
-            self.prev = average
-            self.patience_count = 0
-
-        if self.plot:
-            plt.close()
-            plt.plot(self.val_s_recall, label='class S recall')
-            plt.plot(self.val_s_precision, label='class S precision')
-            plt.plot(self.val_f_precision, label='class F precision')
-            plt.plot(self.val_f_recall, label='class F recall')
-            plt.plot()
-            plt.legend()
-            if self.epoch_count % self.plot_every == 0:
-                plt.show()
-                self.evaluate(val_predict, val_targ)
-            else:
-                self.evaluate(val_predict, val_targ, plot=False)
-        return
-
-    def evaluate( self, predictions, Y_test, title=None, one_hot=True, plot=True ):
-        if one_hot:
-            predictions = list(map(lambda x: np.argmax(x), predictions))
-            Y_test = list(map(lambda x: np.argmax(x), Y_test))
-        if plot:
-            splt.metrics.plot_confusion_matrix(Y_test, predictions, normalize=True, title=title,
-                                               title_fontsize='small')
-        print("per class precision")
-        precision = precision_score(Y_test, predictions, average=None)
-        print(precision)
-        print("average precision")
-        av_precision = np.mean(precision)
-        print(av_precision)
-        print('per class recall')
-        recall = recall_score(Y_test, predictions, average=None)
-        print(recall)
-        print('average recall')
-        av_recall = np.mean(recall)
-        print(av_recall)
-        print('per class f score')
-        fscore = f1_score(Y_test, predictions, average=None)
-        print(fscore)
-        av_fscore = np.mean(fscore)
-        print('average fscore')
-        print(av_fscore)
-
-        if plot:
-            plt.show()
-            plt.close()
-        return av_fscore
-
-
+# noinspection PyTypeChecker
 class NN:
-
-    def preprocess( self, classes, augment, reduce, timesteps, train_size, split='vertical', channels=None,
-                    standardize=True, aami=True, model=None, filtered=False ):
-        if channels is None:
-            channels = [ 0 ]
-        if split == 'vertical':
-            X_train, Y_train, X_val, Y_val, X_test, Y_test = prep.preprocess_split(train_size=train_size,
-                                                                                   classes=classes,
-                                                                                   timesteps=timesteps,
-                                                                                   channels=channels,
-                                                                                   standardize=standardize,
-                                                                                   aami=aami, model=model,
-                                                                                   filtered=filtered)
-        # de Chazal horizontal split
-        else:
-            train_dataset = [ '106', '112', '122', '201', '223', '230', "108", "109", "115", "116", "118", "119", "124",
-                              "205", "207", "208", "209", "215", '101', '114', '203', '220' ]
-            test_dataset = [ "100", "103", "105", "111", "113", "117", "121", "123", "200", "202", "210", "212", "213",
-                             "214", "219",
-                             "221", "222", "228", "231", "232", "233", "234" ]
-            X_train, Y_train = prep.preprocess(train_dataset, channels, model=model, timesteps=timesteps)
-            X_test, Y_test = prep.preprocess(test_dataset, channels, model=model, timesteps=timesteps)
-            X_test, X_val, Y_test, Y_val = train_test_split(X_test, Y_test, test_size=0.1)
-        dv.distribution(Y_train, classes=classes)
-        if reduce is not None:
-            for label in reduce:
-                reduction_factor = reduce[ label ]
-                if reduction_factor > 1:
-                    X_train, Y_train = prep.subsample_data(X_train, Y_train, classes, label, reduction_factor,
-                                                           one_hot=True)
-        if augment is not None:
-            for label in augment:
-                print(label)
-                augment_factor = augment[ label ]
-                print(augment_factor)
-                if augment_factor > 1:
-                    X_train, Y_train = prep.augment_data(X_train, Y_train, classes, label, augment_factor,
-                                                         one_hot=True)
-        X_train, Y_train = shuffle(X_train, Y_train)
-        print('train distribution')
-        print(dv.distribution(Y_train, classes))
-        print('val distribution')
-        print(dv.distribution(Y_val, classes))
-        print('test distribution')
-        print(dv.distribution(Y_test, classes))
-        return X_train, Y_train, X_val, Y_val, X_test, Y_test
 
     def create_LSTM_model( self, X_train, X_val, Y_train, Y_val, aami_classes, callbacks, n_LSTM_layers, n_dense_layers,
                            batch_size,
                            activation, timesteps, n_neurons, optimizer, batch_normalization, epochs, dropout ):
         model = Sequential()
         input_shape = (timesteps, X_train.shape[ 2 ])
+        if len(aami_classes) == 2:
+            loss = 'binary_crossentropy'
+            output_activation = 'sigmoid'
+        else:
+            loss = 'categorical_crossentropy'
+            output_activation = 'softmax'
         if n_LSTM_layers > 1:
             model.add(
                 LSTM(n_neurons, input_shape=input_shape, activation=activation, return_sequences=True))
@@ -188,15 +64,12 @@ class NN:
                     model.add(BatchNormalization())
                 if dropout is not None:
                     model.add(Dropout(dropout))
-        model.add(Dense(len(aami_classes), activation='softmax'))
+        model.add(Dense(Y_train.shape[-1], activation=output_activation))
         optimizer = optimizer
-        tensorboard = TensorBoard(log_dir="beatclassification/NN/logs/{}".format(time()), write_grads=True,
-                                  histogram_freq=1)
-        callbacks.append(tensorboard)
-        model.compile(loss='categorical_crossentropy',
+        model.compile(loss=loss,
                       optimizer=optimizer)
         model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val, Y_val),
-                  callbacks=None, sample_weight=None)
+                  callbacks=callbacks, sample_weight=None)
         return model
 
     def create_CNN_model( self, X_train, X_val, Y_train, Y_val, aami_classes, callbacks, n_dense_layers, batch_size,
@@ -223,67 +96,83 @@ class NN:
                   callbacks=callbacks)
         return model
 
-    def beat_classification( self, classes=None, aami=True ):
+    def beat_classification( self, classes=None, aami=True, augment=None, reduce=None, train_size=0.5, channels=None,
+                             n_dense_layers=1, batch_size=32, standardize=True, multiclass=True, activation='relu',
+                             timesteps=5, n_neurons=128, filtered=False, model=None, model_name='LSTM', epochs=100, train_db='mitdb',
+                             dropout=0.5, vertical=True, n_LSTM_layers=1, window=None, left_window=70, right_window= 100,
+                             callbacks=None, optimizer=None, batch_normalization=True, width=2, patience=10, validation=False):
         if classes is None:
-            classes = [ 'N', 'S', 'V', 'F']
-        augment = {'S' : 4, 'F':9}
-        reduce = {'N' :10}
-        train_size = 0.5
-        channels = [0, 1]
-        n_dense_layers = 3
-        batch_size = 32
-        standardize = True
-        activation = 'relu'
-        timesteps = 5
-        n_neurons = 256
-        filtered = False
-        width = 2
-        model_name = 'LSTM'
-        epochs = 100
-        metrics = Evaluation()
-        dropout = 0.5
-        split= 'horizontal'
-        n_LSTM_layers = 5
-        callbacks = [ EarlyStopping(patience=10, restore_best_weights=True) ]
-        optimizer = SGD()
-        batch_normalization = True
-        best_score = 0
-        best_comb_name = ''
-        for reduce in [None, {'N':11}]:
-            for n_LSTM_layers in [1, 4]:
-                for n_dense_layers in [0, 1, 4]:
-                    X_train, Y_train, X_val, Y_val, X_test, Y_test = self.preprocess(classes, augment, reduce,
-                                                                                     timesteps, train_size,
-                                                                                     channels=channels,
-                                                                                     standardize=standardize, aami=aami,
-                                                                                     model=model_name, split=split,
-                                                                                     filtered=filtered)
-                    if model_name == 'LSTM':
-                        model = self.create_LSTM_model(X_train, X_val, Y_train, Y_val, classes, callbacks, n_LSTM_layers,
-                                                       n_dense_layers, batch_size,
-                                                       activation, timesteps, n_neurons, optimizer, batch_normalization, epochs,
-                                                       dropout)
-                    else:
-                        model = self.create_CNN_model(X_train, X_val, Y_train, Y_val, aami_classes=classes,
-                                                      n_dense_layers=n_dense_layers,
-                                                      batch_size=batch_size, activation=activation, n_neurons=n_neurons,
-                                                      batch_normalization=batch_normalization, callbacks=callbacks, width=width,
-                                                      optimizer=optimizer,
-                                                      epochs=epochs)
-                    predictions = model.predict(X_val, batch_size=32)
-                    fscore = metrics.evaluate(predictions, Y_val, plot=False)
-                    if fscore > best_score:
-                        model.save('best.h5')
-                        best_score = fscore
-                        best_comb_name = str(reduce) + str(n_LSTM_layers) +str(n_dense_layers)
-                    print("best score till now")
-                    print(best_score)
-                    print(best_comb_name)
-                    del model
-        del model
-        best_model = load_model('best.h5')
-        predictions = best_model.predict(X_test, batch_size=32)
-        metrics.evaluate(predictions, Y_test, title=best_comb_name, plot=True)
+            classes = ['N', 'S', 'V', 'F']
+        if callbacks is None:
+            callbacks = [ EarlyStopping(patience=patience, restore_best_weights=True),
+                          TensorBoard(log_dir="beatclassification/NN/logs/{}".format(time()),
+                                  histogram_freq=1)]
+        if optimizer is None:
+            optimizer = Adam()
+        if channels is None:
+            channels = [0]
+        if vertical:
+            X_train, Y_train, X_val, Y_val, X_test, Y_test = prep.vertical_split(classes=classes,
+                                                                                   timesteps=timesteps,
+                                                                                   channels=channels,
+                                                                                   standardize=standardize, aami=aami,
+                                                                                   model=model_name, train_size=train_size,
+                                                                                   multiclass=multiclass,
+                                                                                   window=window,
+                                                                                   left_window=left_window,
+                                                                                   right_window=right_window)
+        # De Chazal horizontal split
+        else:
+            X_train, Y_train, X_val, Y_val, X_test, Y_test = prep.horizontal_split(classes=classes,
+                                                                                   timesteps=timesteps,
+                                                                                   channels=channels,
+                                                                                   standardize=standardize, aami=aami,
+                                                                                   model=model_name, train_db=train_db,
+                                                                                   multiclass=multiclass,
+                                                                                   window=window,
+                                                                                   left_window=left_window,
+                                                                                   right_window=right_window)
+        dv.distribution(Y_train, classes=classes, multiclass=multiclass)
+        if reduce is not None:
+            for label in reduce:
+                reduction_factor = reduce[ label ]
+                if reduction_factor > 1:
+                    X_train, Y_train = prep.subsample_data(X_train, Y_train, classes, label, reduction_factor,
+                                                           one_hot=True)
+        if augment is not None:
+            for label in augment:
+                print(label)
+                augment_factor = augment[ label ]
+                print(augment_factor)
+                if augment_factor > 1:
+                    X_train, Y_train = prep.augment_data(X_train, Y_train, classes, label, augment_factor,
+                                                         one_hot=True)
+        X_train, Y_train = shuffle(X_train, Y_train)
+        print('train distribution')
+        print(dv.distribution(Y_train, classes, multiclass=multiclass))
+        print('val distribution')
+        print(dv.distribution(Y_val, classes, multiclass=multiclass))
+        print('test distribution')
+        print(dv.distribution(Y_test, classes, multiclass=multiclass))
+        if model is None:
+            if model_name == 'LSTM':
+                model = self.create_LSTM_model(X_train, X_val, Y_train, Y_val, classes, callbacks, n_LSTM_layers,
+                                               n_dense_layers, batch_size,
+                                               activation, timesteps, n_neurons, optimizer, batch_normalization, epochs,
+                                               dropout)
+            else:
+                model = self.create_CNN_model(X_train, X_val, Y_train, Y_val, aami_classes=classes,
+                                              n_dense_layers=n_dense_layers,
+                                              batch_size=batch_size, activation=activation, n_neurons=n_neurons,
+                                              batch_normalization=batch_normalization, callbacks=callbacks, width=width,
+                                              optimizer=optimizer,
+                                              epochs=epochs)
+        if validation:
+            predictions = model.predict(X_val, batch_size=32)
+            return eval.evaluate(predictions, Y_val, plot=False), model
+        else:
+            predictions = model.predict(X_test, batch_size=32)
+            eval.evaluate(predictions, Y_test, classes=classes,  plot=True, title='Confusion Matrix for LSTM network')
         #self.export_model(tf.train.Saver(), [ model_name.lower() + '_1_input' ], 'dense_2/Softmax', model_name)
 
     def export_model( self, saver, input_node_names, output_node_name, model_name ):
@@ -306,4 +195,31 @@ class NN:
 
 if __name__ == '__main__':
     lstm = NN()
-    lstm.beat_classification()
+    augment = {'S':4, 'F':9}
+    best_score = 0
+    scores = list()
+    best_window = None
+    windows = [200, 300]
+    for window in windows:
+        score, model = lstm.beat_classification(window=window, augment=augment, validation=True, patience=10)
+        scores.append(score)
+        if score > best_score:
+            best_score = score
+            best_window = window
+            model.save('best.h5')
+        K.clear_session()
+    print('best')
+    print(best_window)
+    print(best_score)
+    model = load_model('best.h5')
+    lstm.beat_classification(window=best_window, augment=augment, model=model)
+    plt.close()
+    plt.plot(windows, scores)
+    plt.ylabel('F1 score')
+    plt.xlabel('window size(samples)')
+    plt.legend()
+    plt.show()
+
+
+
+
